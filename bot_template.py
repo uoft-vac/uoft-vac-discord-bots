@@ -10,7 +10,7 @@ This file is not meant to be run.
 TODO: Fill out information above according to your bot's purposes.
 '''
 
-import discord
+from discord import Intents
 from discord.ext import commands
 ...
 
@@ -18,12 +18,11 @@ from discord.ext import commands
 ...
 
 
-intents = discord.Intents.all()
 # TODO: Set command_prefix (str) to the command prefix of choice.
 # A command prefix is the symbol at the beginning of every bot command message.
 # E.g. Use '.' for commands like ".show", or use '/' for commands like "/help".
 # '.' is the easiest in my opinion.
-client = commands.Bot(command_prefix = ..., intents = intents)
+client = commands.Bot(command_prefix = ..., intents = Intents.all())
 
 # When the bot goes online.
 @client.event
