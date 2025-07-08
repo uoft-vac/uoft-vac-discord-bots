@@ -37,7 +37,7 @@ async def on_ready():
 # The function name is the command name.
 # E.g. If the function name is command_func_eg, then the user would type ".command_func_eg …"
 @client.command(pass_context = True)
-async def command_func_eg(ctx, *args) -> None:
+async def command_func_eg(ctx) -> None:
     ...
 
 ...
