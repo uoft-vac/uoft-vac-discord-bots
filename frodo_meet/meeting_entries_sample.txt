@@ -1,23 +1,23 @@
 title: General Meeting 1
 time: 2025 06 07 19 00
 details: Our first exec meeting of the year! Get to know each other and a run down on club operations.
-participants: @everyone
+participants: everyone
 labels: SOON
 
 title: Weekly Event Recap
 time: 2025 06 13 19 00
 details: Go over today's event. How did it go, anything nice, any improvements for the future, etc.
-participants: &11111
+participants: <r>11111
 labels: WEEKLY PAUSED
 
 title: Webmasters 2 - Website
 time: 2025 06 17 20 00
 details: Go over how we should begin coding the club's website.
-participants: 22222 33333
+participants: <u>22222 <u>33333
 labels: 
 
 title: Tea Club Collab Meeting
 time: 2025 09 11 16 00
 details: Discuss the collab event for Sep 13. What to do, what to bring.
-participants: &11111 &44444
+participants: <r>11111 <r>44444
 labels: CANCELED
