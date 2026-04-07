@@ -1,7 +1,7 @@
 '''Discord Bot Template
-Author(s): Sunny Lin
-Editor(s): N/A
-Last edited: Jul 5, 25
+Author: Sunny Lin
+Editors: 
+Last modified: Jul 5, 25
 
 This is a template file for starting to program Discord bots in Python.
 It should have most features a basic bot could need like command functions and auto functions.

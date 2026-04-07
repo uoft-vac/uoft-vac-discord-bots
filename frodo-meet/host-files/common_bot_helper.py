@@ -1,33 +1,28 @@
 '''Common Bot Helper
 Author: Sunny Lin
-Editor(s):
-Last edited: Jul 6, 25
+Editors: 
+Last modified: Jul 6, 25
 
-This file contains functions that many bots will likely find useful.
+Contains functions that many bots will likely find useful.
+To be deployed along with bot host files.
 '''
+import json
 
-def get_file_lines(file_path: str) -> tuple[str]:
-    '''Return a tuple of the stripped lines from a file.
-    Allows for testing on functions that read from a file.
 
-    Sample usage inapplicable.
-    '''
-    with open(file_path, 'r') as file_read:
-        return tuple(line.strip() for line in file_read.readlines())
+# File functions:
+def read_json_file(file_path: str) -> dict:
+    with open(file_path, 'r') as f: return json.load((f))
 
-def write_file(file_path: str, output: list[str]) -> None:
-    '''Write a given list of strings to a given txt file.
-    Each element in the output list is a line to be written.
+def write_json_file(file_path: str, data: dict) -> None:
+    with open(file_path, 'w') as f: json.dump(data, f, indent = 4)
 
-    Sample usage inapplicable.
-    '''
-    with open(file_path, 'w') as file_write:
-        file_write.write('\n'.join(output))
 
+# Discord functions:
 def chop_output(output: str, limit: int) -> tuple[str]:
-    '''Given a string to be outputted, return a tuple containing chopped parts of the output
+    '''
+    Given a string to be outputted, return a tuple containing chopped parts of the output,
     where the chops are at line breaks and each substring is under the given word limit.
-    This is so string above the word limit can be sent in several messages and still be displayed.
+    This is so string above the word limit can be sent in multiple messages and still be displayed.
 
     Sample Usage:
     >>> chop_output('e', 5)
@@ -94,6 +89,7 @@ def chop_output(output: str, limit: int) -> tuple[str]:
 
     # Otherwise, all lines have been added, so return the output list.
     return chopped
+
 
 if __name__ == '__main__':
     from doctest import testmod
