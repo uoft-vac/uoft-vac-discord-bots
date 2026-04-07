@@ -17,6 +17,30 @@ def write_json_file(file_path: str, data: dict) -> None:
     with open(file_path, 'w') as f: json.dump(data, f, indent = 4)
 
 
+# Input functions:
+def parse_input(input: str, breakpoint: str) -> list[str]:
+    '''
+    Given an input string and breakpoint string,
+    return a list of the arguments (substrings) from the input
+    divided by the breakpoint.
+    Also make all arguments lowercase.
+
+    Sample Usage:
+    >>> parse_input('hello hi', ' ')
+    ['hello', 'hi']
+
+    >>> parse_input(' Hello  HI   ', ' ')
+    ['hello', 'hi']
+
+    >>> parse_input('hello hi, greetings', ',')
+    ['hello hi', 'greetings']
+
+    >>> parse_input('hello hi', 'hello')
+    ['hi']
+    '''
+    return [arg.strip().lower() for arg in input.split(breakpoint) if arg.strip()]
+
+
 # Discord functions:
 def chop_output(output: str, limit: int) -> tuple[str]:
     '''

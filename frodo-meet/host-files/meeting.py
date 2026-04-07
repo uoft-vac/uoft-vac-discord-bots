@@ -25,6 +25,7 @@ class Meeting:
         self._participants = participants
         self._labels = labels
     
+    # Inits:
     @classmethod
     def from_file(cls, entry_data: dict):
         return cls(
@@ -35,6 +36,7 @@ class Meeting:
             entry_data['labels'],
         )
     
+
     # Getters:
     def get_title(self) -> str: return self._title
     def get_time(self) -> float: return self._time

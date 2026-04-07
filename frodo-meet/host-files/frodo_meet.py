@@ -3,7 +3,7 @@ Author: Sunny Lin
 Editors: 
 Last modified: Jul 6, 25
 
-Uoft (St. George campus) Visual Arts Club exec team's Discord bot for easy meeting plan management.
+Uoft Visual Arts Club exec team's Discord bot for easy meeting plan management.
 
 Can add, cancel, & edit meeting plans with Discord commands.
 Also notifies meeting members when a meeting is about to start.
@@ -16,72 +16,79 @@ Not for public use.
 # TODO: add, cancel, edit functions.
 # TODO: Check + notify auto function.
 
-from discord import Intents
+# Get working directory:
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent
+
+from discord import Intents, Interaction
 from discord.ext import commands
 
 from asyncio import sleep
 from time import time, strftime
 
-import common_bot_helper
+from common_bot_helper import \
+    read_json_file
 import frodo_meet_commands
+from frodo_meet_helper import \
+    get_meetings
+from add_input_modal import AddInputModal
+
 
 # CONSTANTS:
+NOTIFY_CHANNEL_ID = ... # TODO: Channel ID for the meeting notification channel.
+ENTRIES_FILE_PATH = BASE_DIR / "meeting_entries.json"
 
-CHANNEL_ID = ... # TODO: Channel ID for the meeting notification channel.
-ENTRIES_FILE_PATH = 'meeting_entries.json'
-
-WORD_LIMIT = 2000 # Word limit for Discord messages; might vary, but this is a safe value.
+COMMAND_PREFIX = '.' # For single line commands (e.g. show).
+MESSAGE_TIMEOUT = 60 # Bot will stop awaiting messages after this number of seconds.
 CHECK_INTERVAL = 60 # Seconds between each check for upcoming meetings.
+WORD_LIMIT = 2000 # Word limit for Discord messages; might vary, but this is a safe value.
 
 
-client = commands.Bot(command_prefix = '.', intents = Intents.all())
+intents = Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
 
-@client.event
+@bot.event
 async def on_ready():
-    print('Logged in as {0.user}'.format(client))
-    client.loop.create_task(check_and_notify())
+    await bot.tree.sync()
+    print('Logged in as {0.user}'.format(bot))
+    # bot.loop.create_task(check_and_notify())
 
 
 # COMMAND FUNCTIONS:
 
-@client.command(pass_context = True)
+@bot.command(pass_context = True)
 async def show(ctx, *args) -> None:
     await ctx.send(frodo_meet_commands.show(
         args,
-        common_bot_helper.read_json_file(ENTRIES_FILE_PATH),
+        get_meetings(read_json_file(ENTRIES_FILE_PATH)),
         time(),
     ))
 
-@client.command(pass_context = True)
-async def add(ctx, *args) -> None:
-    await ctx.send(frodo_meet_commands.add(
-        args,
-        common_bot_helper.read_json_file(ENTRIES_FILE_PATH),
-    ))
+@bot.tree.command(name='add', description='Create a new meeting!')
+async def add(interaction: Interaction) -> None:
+    await interaction.response.send_modal(AddInputModal())
 
-@client.command(pass_context = True)
+@bot.command(pass_context = True)
 async def cancel(ctx, *args) -> None:
-    await ctx.send(frodo_meet_commands.cancel(
-        args,
-        common_bot_helper.read_json_file(ENTRIES_FILE_PATH),
-    ))
+    ...
 
-@client.command(pass_context = True)
+@bot.command(pass_context = True)
 async def edit(ctx, *args) -> None:
-    await ctx.send(frodo_meet_commands.edit(
-        args,
-        common_bot_helper.read_json_file(ENTRIES_FILE_PATH),
-    ))
+    ...
 
 
 # AUTO FUNCTIONS:
 
 async def check_and_notify() -> None:
-    await client.wait_until_ready()
-    while not client.is_closed():
+    await bot.wait_until_ready()
+    while not bot.is_closed():
         ...
 
 
 # THE CODE BODY BELOW CONTAINS SENSITIVE INFORMATION; KEEP COMPRESSED.
 if __name__ == '__main__':
-    client.run('MTM5MTIwNDQ3MjQwNzA2NDY4OA.GsICWF.64EdmwlT3BDEqV11ZZYaDuz03oyt548Ild3crQ')
+    from os import getcwd
+    print(f'Current working directory: {getcwd()}')
+
+    bot.run('MTM5MTIwNDQ3MjQwNzA2NDY4OA.GsICWF.64EdmwlT3BDEqV11ZZYaDuz03oyt548Ild3crQ')
