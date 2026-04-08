@@ -3,14 +3,24 @@ Author: Sunny Lin
 Editors: 
 Last modified: Apr 6, 26
 '''
+from re import sub
+
 from meeting_time import MeetingTime
 
-LABELS = (
-    'soon', # Happening in less than <NOTICE_TIME> seconds.
-    'canceled', # Will not notify.
-    'weekly', # Will be cloned same time next week upon beginning.
-    'paused', # All subsequent meetings will not notify (for weekly meetings).
-)
+SOON_LABEL = 'soon' # Happening in less than <NOTICE_TIME> seconds.
+CANCELED_LABEL = 'canceled' # Will not notify.
+# Recurring labels: will be cloned the same time next occurrence upon beginning.
+YEARLY_LABEL = 'yearly'
+WEEKLY_LABEL = 'weekly'
+DAILY_LABEL = 'daily'
+PAUSED_LABEL = 'paused' # All subsequent meetings will not notify (for recurring meetings).
+
+LABELS = (SOON_LABEL, CANCELED_LABEL, YEARLY_LABEL, WEEKLY_LABEL, DAILY_LABEL, PAUSED_LABEL)
+NON_NOTIFY_LABELS = (SOON_LABEL, CANCELED_LABEL, PAUSED_LABEL)
+RECURRING_LABELS = (YEARLY_LABEL, WEEKLY_LABEL, DAILY_LABEL)
+
+USER_INDICATOR = '<u>'
+ROLE_INDICATOR = '<r>'
 
 
 class Meeting:
@@ -39,10 +49,10 @@ class Meeting:
         self._labels = labels
     
 
-    # INITS:
+    # INITS
 
     @classmethod
-    def from_file(cls, entry_data: dict):
+    def from_file(cls, entry_data: dict) -> 'Meeting':
         return cls(
             entry_data['title'],
             MeetingTime(entry_data['time']),
@@ -52,33 +62,17 @@ class Meeting:
         )
     
 
-    # INSTANCE METHODS:
+    # INSTANCE METHODS
 
-    def to_discord(self, index: int | None = None, now: MeetingTime | None = None, is_full: bool = False) -> str:
+    def to_discord(self, index: int | None = None, full: bool = False, pinging: bool = False) -> str:
         '''
-        Return a string of the meeting's data be printed to Discord.
-
-        Used by show command and data-modifying commands' input modals responses.
+        Return a string of the meeting's data to be printed to Discord.
 
         Sample Usage:
-        >>> from constants import SAMPLE_MEETINGS, SAMPLE_NOW
 
-        >>> meeting = SAMPLE_MEETINGS[0]
-
-        >>> meeting.to_discord()
-        '## General Meeting 1 (soon)\\n<t:1749319200:F>'
-
-        >>> meeting.to_discord(0)
-        '## 1. General Meeting 1 (soon)\\n<t:1749319200:F>'
-
-        >>> meeting.to_discord(0, SAMPLE_NOW)
-        '## 1. General Meeting 1 (soon)\\n<t:1749319200:F> (<t:300:R>)'
-
-        >>> meeting.to_discord(0, SAMPLE_NOW, True)
-        '## 1. General Meeting 1 (soon)\\n<t:1749319200:F> (<t:300:R>)\\nOur first exec meeting of the year! Get to know each other and a run down on club operations.\\n**Participants:** <r>11111'
         '''
-        time = self._time
-        labels = self._labels
+        time = self.get_time()
+        labels = self.get_labels()
 
         output = '## '
 
@@ -86,22 +80,34 @@ class Meeting:
         if index != None: output += f'{index + 1}. '
 
         # Add title.
-        output += self._title
+        output += self.get_title()
 
         # If meeting has any labels, add them in parentheses.
         if labels: output += f' ({', '.join(labels)})'
         
-        # Add time on next line.
-        output += f'\n{time.to_discord()}'
-
-        # If current time given, add time difference.
-        if now != None: output += \
-            f' ({(time - now).to_discord(True)})'
+        # Add absolute and relative time on next line.
+        output += f'\n{time.to_discord()} ({time.to_discord(True)})'
         
-        # If printing full, add description and unformatted participants on separate lines.
-        if is_full: output += \
-            f'\n{self._description \
-            }\n**Participants:** {', '.join(self._participants)}'
+        # If not printing full, return output as it is.
+        if not full: return output
+        
+        # Otherwise, also add description and participants.
+
+        # Add description on next line if there is one.
+        description = self.get_description()
+        if description: output += f'\n{description}'
+
+        # Add participants on next line.
+        participants = self.get_participants()
+        if participants:
+            output += f'\n__Participants__: {', '.join(participants)}'
+
+            # If printing to ping, format all participants so Discord pings them.
+            if pinging:
+                output = sub(r'<u>(\d+)', r'<@\1>', output)
+                output = sub(r'<r>(\d+)', r'<@&\1>', output)
+        
+        else: output += f'\n__No participants__ 🧐'
         
         return output
     
@@ -150,7 +156,7 @@ class Meeting:
         # If index is a +argument, display.
         if f'{index_inc}' in args: return True
         
-        labels = self._labels
+        labels = self.get_labels()
         has_nlabel = False
 
         # Check labels.
@@ -175,19 +181,42 @@ class Meeting:
         return not ('canceled' in labels or 'paused' in labels)
     
 
-    # Getters:
+    def __lt__(self, other: 'Meeting') -> bool:
+        return \
+            self.get_time().get_timestamp() < \
+            other.get_time().get_timestamp()
+    
+
+    def has_labels(self, *labels: str) -> bool:
+        for label in labels:
+            if label.strip().lower() in self.get_labels():
+                return True
+        
+        return False
+    
+
+    def is_soon(self, now: MeetingTime, notify_time_secs: int) -> bool:
+        return self.get_time().is_within_timeframe(now, notify_time_secs)
+    
+
     def get_title(self) -> str: return self._title
     def get_time(self) -> MeetingTime: return self._time
     def get_description(self) -> str: return self._description
     def get_participants(self) -> list[str]: return self._participants
     def get_labels(self) -> list[str]: return self._labels
 
-    # Setters:
     def set_title(self, title: str) -> None: self._title = title
     def set_time(self, time: MeetingTime) -> None: self._time = time
     def set_description(self, description: str) -> None: self._description = description
     def set_participants(self, participants: list[str]) -> None: self._participants = participants
     def set_labels(self, labels: list[str]) -> None: self._labels = labels
+
+    def add_label(self, label: str) -> bool:
+        if self.has_labels(label): return False
+
+        self.get_labels().append(label)
+        return True
+
 
 if __name__ == '__main__':
     from doctest import testmod

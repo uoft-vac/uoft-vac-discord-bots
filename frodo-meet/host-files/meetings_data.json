@@ -1,35 +1,15 @@
 {
     "meetings": [
         {
-            "title": "SAY GEX",
-            "time": 1775044740.0,
-            "description": "go VYAC!!!",
-            "participants": [],
-            "labels": [
-                "heated",
-                "rivalry"
-            ]
-        },
-        {
-            "title": "domer",
-            "time": 1776229260.0,
-            "description": "I put in \"2026 apr 15 1 1\", so salamalekoooo",
-            "participants": [],
-            "labels": []
-        },
-        {
-            "title": "test 2",
-            "time": 1776556800.0,
-            "description": "should be indexed before other one",
-            "participants": [],
-            "labels": []
-        },
-        {
             "title": "test",
-            "time": 1776643200.0,
+            "time": 1775686260.0,
             "description": "",
-            "participants": [],
-            "labels": []
+            "participants": [
+                "<u>580174011703492658"
+            ],
+            "labels": [
+                "soon"
+            ]
         }
     ]
 }

@@ -3,7 +3,7 @@ Author: Sunny Lin
 Editors: 
 Last modified: Apr 7, 26
 '''
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from time import time
 
@@ -12,7 +12,7 @@ from common_bot_helper import parse_input
 TORONTO_TIMEZONE = ZoneInfo("America/Toronto")
 
 
-# HELPER FUNCTIONS:
+# HELPER FUNCTIONS
 
 '''
 Arg validating functions:
@@ -36,20 +36,7 @@ MONTHS = (
     'november', 'nov',
     'december', 'dec',
 )
-MONTH_LAST_DAYS = (
-    31,
-    28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-)
+MONTH_LAST_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 def _validate_year(arg: str) -> int | None:
     if arg.isdigit(): return int(arg)
@@ -90,7 +77,7 @@ class MeetingTime:
     _timestamp: float
 
     def __init__(self, timestamp: float) -> None:
-        dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        dt = datetime.fromtimestamp(timestamp, tz=TORONTO_TIMEZONE)
 
         self._year = dt.year
         self._month = dt.month
@@ -101,10 +88,10 @@ class MeetingTime:
         self._timestamp = timestamp
     
 
-    # INITS:
+    # INITS
 
     @classmethod
-    def from_args(cls, year: int, month: int, day: int, hour: int, minute: int):
+    def from_args(cls, year: int, month: int, day: int, hour: int, minute: int) -> 'MeetingTime':
         return cls(datetime(year, month, day, hour, minute, tzinfo=TORONTO_TIMEZONE).timestamp())
     
     @classmethod
@@ -123,26 +110,29 @@ class MeetingTime:
                 _validate_hour(args[3]), \
                 _validate_minute(args[4])
         
-        if None in init_args:
-            return 'Invalid time input.'
+        # If any args are None, the input was invalid.
+        if None in init_args: return 'Invalid time input.'
         
         return cls(datetime(*init_args, tzinfo=TORONTO_TIMEZONE).timestamp())
     
     @classmethod
-    def get_now(cls): return cls(time())
+    def get_now(cls) -> 'MeetingTime': return cls(time())
 
 
-    # INSTANCE METHODS:
+    # INSTANCE METHODS
 
-    # Discord format:
-    def to_discord(self, is_relative: bool = False) -> str:
-        return f'<t:{int(self._timestamp)}:{'F' if not is_relative else 'R'}>'
+    def to_discord(self, relative: bool = False) -> str:
+        return f'<t:{int(self.get_timestamp())}:{'F' if not relative else 'R'}>'
+    
 
-    # Difference:
-    def __sub__(self, other):
-        return MeetingTime(self._timestamp - other._timestamp)
+    def is_within_timeframe(self, other: 'MeetingTime', timeframe_secs: int) -> bool:
+        return abs((self - other).get_timestamp()) <= timeframe_secs
 
-    # Getters:
+
+    def __sub__(self, other: 'MeetingTime') -> 'MeetingTime':
+        return MeetingTime(self.get_timestamp() - other.get_timestamp())
+
+
     def get_year(self) -> int: return self._year
     def get_month(self) -> int: return self._month
     def get_day(self) -> int: return self._day

@@ -1,50 +1,59 @@
 {
     "meetings": [
         {
-            "title": "General Meeting 1",
-            "time": 1749319200.0,
-            "description": "Our first exec meeting of the year! Get to know each other and a run down on club operations.",
+            "title": "No labels, soon",
+            "time": 10.0,
+            "description": "Will notify and be marked as soon.",
             "participants": [
-                "<r>11111"
-            ],
-            "labels": [
-                "soon"
-            ]
-        },
-        {
-            "title": "Weekly Event Recap",
-            "time": 1749837600.0,
-            "description": "Go over today's event. How did it go, anything nice, any improvements for the future, etc.",
-            "participants": [
-                "<r>22222"
-            ],
-            "labels": [
-                "weekly",
-                "paused"
-            ]
-        },
-        {
-            "title": "Webmasters - Website",
-            "time": 1750190400.0,
-            "description": "Go over how we should begin coding the club's website.",
-            "participants": [
-                "<u>33333",
-                "<u>44444"
+                "<r>12345"
             ],
             "labels": [
 
             ]
         },
         {
-            "title": "Tea Club Collab Meeting",
-            "time": 1757606400.0,
-            "description": "Discuss the collab event for Sep 13. What to do, what to bring.",
+            "title": "Has soon, multiple participants",
+            "time": 20.0,
+            "description": "Will not notify since it is marked as soon.",
             "participants": [
-                "<r>22222",
-                "<u>55555"
+                "<r>12345",
+                "<u>67890"
+            ],
+            "labels": [
+                "soon"
+            ]
+        },
+        {
+            "title": "Soon, canceled, no participants",
+            "time": 30.0,
+            "description": "Will not notify since it is canceled, will be marked as soon.",
+            "participants": [
+
             ],
             "labels": [
                 "canceled"
+            ]
+        },
+        {
+            "title": "No description",
+            "time": 40.0,
+            "description": "",
+            "participants": [
+
+            ],
+            "labels": [
+
+            ]
+        },
+        {
+            "title": "Not soon",
+            "time": 1000.0,
+            "description": "Will not notify nor be marked as soon since it's not within the notice time (e.g. 5 mins).",
+            "participants": [
+                
+            ],
+            "labels": [
+
             ]
         }
     ]

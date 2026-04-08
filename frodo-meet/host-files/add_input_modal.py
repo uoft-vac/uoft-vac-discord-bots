@@ -2,14 +2,16 @@
 Author: Sunny Lin
 Editors: 
 Last modified: Apr 7, 26
+
+Input modal for the add command.
 '''
 from discord import ui, Interaction, ButtonStyle
 
 from common_bot_helper import RESPONSE_TIMEOUT, parse_input
 
-from constants import DATA_FILE_PATH
-from bot_commands import add
-from data_access import write_meetings
+from frodo_meet_commands import add
+from frodo_meet_data import write_meetings, DATA_FILE_PATH
+
 from meeting import Meeting
 from meeting_time import MeetingTime
 
@@ -45,7 +47,7 @@ class AddInputModal(ui.Modal, title='Add Meeting'):
         )
 
         await interaction.response.send_message(
-            f'New meeting:\n{new_meeting.to_discord(is_full=True)}\n\nWould you like to save this meeting?',
+            f'New meeting:\n{new_meeting.to_discord(full=True)}\n\nWould you like to save this meeting?',
             view=ConfirmView(self._meetings, new_meeting)
         )
 
@@ -60,20 +62,20 @@ class ConfirmView(ui.View):
         self._new_meeting = new_meeting
 
     @ui.button(label="Yes", style=ButtonStyle.green)
-    async def confirm(self, interaction: Interaction, button: ui.Button):
+    async def confirm(self, interaction: Interaction, _: ui.Button):
         meetings, new_meeting = self._meetings, self._new_meeting
 
         add(meetings, new_meeting)
         write_meetings(DATA_FILE_PATH, meetings)
 
         await interaction.response.edit_message(
-            content=f'{new_meeting.get_title()} has been saved!',
+            content=f'**{new_meeting.get_title()}** has been saved!',
             view=None
         )
 
     @ui.button(label="No", style=ButtonStyle.red)
-    async def cancel(self, interaction: Interaction, button: ui.Button):
+    async def cancel(self, interaction: Interaction, _: ui.Button):
         await interaction.response.edit_message(
-            content=f'{self._new_meeting.get_title()} was discarded.',
+            content=f'**{self._new_meeting.get_title()}** was discarded.',
             view=None
         )
