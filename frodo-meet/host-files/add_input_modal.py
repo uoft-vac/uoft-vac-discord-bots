@@ -5,11 +5,11 @@ Last modified: Apr 7, 26
 
 Input modal for the add command.
 '''
-from discord import ui, Interaction, ButtonStyle, Message
+from discord import ui, Interaction, ButtonStyle
 
-from common_bot_helper import RESPONSE_TIMEOUT, await_message_default, parse_input
+from common_bot_helper import RESPONSE_TIMEOUT, await_message_default
 
-from frodo_meet_commands import add
+from frodo_meet_commands import add_meeting
 from frodo_meet_data import write_meetings, DATA_FILE_PATH
 
 from meeting import Meeting
@@ -52,7 +52,10 @@ class AddInputModal(ui.Modal, title='Add Meeting'):
             await interaction.followup.send('Response timeout. ⚠️')
             return
         
-        participants = parse_input(participants_message.content, LIST_INPUT_BREAKPOINT)
+        participants = (
+            [f"<@&{role.id}>" for role in participants_message.role_mentions] +
+            [f"<@{user.id}>" for user in participants_message.mentions]
+        )
 
         # Create meeting object.
         new_meeting = Meeting(
@@ -84,17 +87,17 @@ class ConfirmView(ui.View):
     async def confirm(self, interaction: Interaction, _: ui.Button):
         meetings, new_meeting = self._meetings, self._new_meeting
 
-        add(meetings, new_meeting)
+        add_meeting(meetings, new_meeting)
         write_meetings(DATA_FILE_PATH, meetings)
 
         await interaction.response.edit_message(
-            content=f'**{new_meeting.get_title()}** has been created! ✨',
+            content=f'{new_meeting.get_title(True)} has been created! ✨',
             view=None
         )
 
     @ui.button(label="No", style=ButtonStyle.red)
     async def cancel(self, interaction: Interaction, _: ui.Button):
         await interaction.response.edit_message(
-            content=f'**{self._new_meeting.get_title()}** has been discarded. 🗑️',
+            content=f'{self._new_meeting.get_title(True)} has been discarded. 🗑️',
             view=None
         )

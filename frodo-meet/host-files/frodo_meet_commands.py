@@ -5,15 +5,19 @@ Last modified: Apr 8, 26
 
 Functions to execute tasks and compute outputs for bot commands.
 '''
-from meeting import Meeting, SOON_LABEL, NON_NOTIFY_LABELS
+from meeting import Meeting, \
+    SOON_LABEL, \
+    NON_NOTIFY_LABELS, \
+    NON_BEGIN_LABELS, \
+    RECURRING_LABELS
 from meeting_time import MeetingTime
 
 
 # BOT FUNCTIONS
 
-def show(args: tuple[str], meetings: list[Meeting], ids_to_names: dict[str: str]) -> str:
+def show_meetings(args: tuple[str], meetings: list[Meeting], ids_to_names: dict[str: str]) -> str:
     '''
-    Display the list of meetings in order.
+    Display the meetings list in order.
     Along with displaying times, also include how much time the meeting is from now.
 
     By default, display the title, labels, & time of active meetings.
@@ -32,8 +36,28 @@ def show(args: tuple[str], meetings: list[Meeting], ids_to_names: dict[str: str]
     - There cannot be a + and - arg with the same label/index.
 
     Sample Usage:
-    >>> from frodo_meet_data import SAMPLE_MEETINGS
+    >>> from frodo_meet_data import SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES
+
+    >>> show_meetings((), [], {})
+    'There are no meetings. 🧐'
     
+    >>> show_meetings((), SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES)
+    '## 1. past\\n<t:0:F> (<t:0:R>)\\n## 2. past, has soon, daily, multiple participants (soon, daily)\\n<t:0:F> (<t:0:R>)\\n## 5. no description\\n<t:20:F> (<t:20:R>)\\n## 6. not soon\\n<t:1000:F> (<t:1000:R>)'
+
+    >>> show_meetings(('full',), SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES)
+    '## 1. past\\n<t:0:F> (<t:0:R>)\\nnotify: will notify and mark as soon. begin: will begin and be removed\\n__Participants__: Execs\\n## 2. past, has soon, daily, multiple participants (soon, daily)\\n<t:0:F> (<t:0:R>)\\nnotify: will not notify since marked as soon. begin: will begin, be removed, and be cloned tomorrow\\n__Participants__: Execs, Sunny\\n## 5. no description\\n<t:20:F> (<t:20:R>)\\n__No participants__ 🧐\\n## 6. not soon\\n<t:1000:F> (<t:1000:R>)\\nwill not notify or begin\\n__No participants__ 🧐'
+
+    >>> show_meetings(('all',), SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES)
+    '## 1. past\\n<t:0:F> (<t:0:R>)\\n## 2. past, has soon, daily, multiple participants (soon, daily)\\n<t:0:F> (<t:0:R>)\\n## 3. past, weekly, paused, no participants (weekly, paused)\\n<t:0:F> (<t:0:R>)\\n## 4. soon, canceled (canceled)\\n<t:10:F> (<t:10:R>)\\n## 5. no description\\n<t:20:F> (<t:20:R>)\\n## 6. not soon\\n<t:1000:F> (<t:1000:R>)'
+    
+    >>> show_meetings(('all', '-soon', '-1'), SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES)
+    '## 3. past, weekly, paused, no participants (weekly, paused)\\n<t:0:F> (<t:0:R>)\\n## 4. soon, canceled (canceled)\\n<t:10:F> (<t:10:R>)\\n## 5. no description\\n<t:20:F> (<t:20:R>)\\n## 6. not soon\\n<t:1000:F> (<t:1000:R>)'
+
+    >>> show_meetings(('-all',), SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES)
+    ''
+
+    >>> show_meetings(('-all', 'paused', '4'), SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES)
+    '## 3. past, weekly, paused, no participants (weekly, paused)\\n<t:0:F> (<t:0:R>)\\n## 4. soon, canceled (canceled)\\n<t:10:F> (<t:10:R>)'
     '''
     # print(meetings)
 
@@ -56,9 +80,9 @@ def show(args: tuple[str], meetings: list[Meeting], ids_to_names: dict[str: str]
     return output[:-1]
 
 
-def add(meetings: list[Meeting], new_meeting: Meeting) -> int:
+def add_meeting(meetings: list[Meeting], new_meeting: Meeting) -> int:
     '''
-    Add the new meeting to the list of meetings, and sort it.
+    Add the new meeting to the meetings list, and sort it.
     Return the new meeting's index in the sorted list.
 
     Sample Usage:
@@ -66,13 +90,15 @@ def add(meetings: list[Meeting], new_meeting: Meeting) -> int:
     >>> from frodo_meet_data import SAMPLE_MEETINGS
 
     >>> meetings = deepcopy(SAMPLE_MEETINGS)
-    >>> new_meeting = Meeting('New meeting', MeetingTime(15), 'Will be inserted at index 1 (second meeting)', [], [])
 
-    >>> add(meetings, new_meeting)
-    1
+    >>> new_meeting = Meeting('new meeting', MeetingTime(5), 'will be inserted at index 3 (after past meetings)', [], [])
 
-    >>> meetings[1].get_title()
-    'New meeting'
+    >>> index = add_meeting(meetings, new_meeting)
+    >>> index
+    3
+
+    >>> meetings[index].get_title()
+    'new meeting'
     '''
     meetings.append(new_meeting)
     meetings.sort()
@@ -80,9 +106,9 @@ def add(meetings: list[Meeting], new_meeting: Meeting) -> int:
     return meetings.index(new_meeting)
 
 
-def notify(meetings: list[Meeting], now: MeetingTime, notice_time_secs: int) -> str | None:
+def notify_meetings(meetings: list[Meeting], now: MeetingTime, notice_time_secs: int) -> str:
     '''
-    Check if any meetings without the 'soon' label is within the notice time.
+    Check if any active meetings not marked as 'soon' is within the notice time.
     Return a string of notify messages for all meetings that this applies to,
     and mark these meetings as 'soon' if they haven't been already.
     Return None if there are no meetings to notify.
@@ -96,30 +122,26 @@ def notify(meetings: list[Meeting], now: MeetingTime, notice_time_secs: int) -> 
 
     >>> meetings = deepcopy(SAMPLE_MEETINGS)
 
-    # Meetings that are notified will be marked as soon.
     >>> m0, m2, m3 = meetings[0], meetings[2], meetings[3]
     >>> m0.has_labels(SOON_LABEL) or m2.has_labels(SOON_LABEL) or m3.has_labels(SOON_LABEL)
-    False
+    []
 
-    # Notice time = 10: will only notify first meeting.
-    >>> notify(meetings, EPOCH, 10)
-    '**No labels, soon** will begin soon!\\n## 1. No labels, soon\\n<t:10:F> (<t:10:R>)\\nWill notify and be marked as soon.\\n__Participants__: <@&12345>'
-    >>> m0.has_labels(SOON_LABEL)
-    True
+    >>> notify_meetings(meetings, EPOCH, 10)
+    '**past** will begin soon!\\n## 1. past\\n<t:0:F> (<t:0:R>)\\nnotify: will notify and mark as soon. begin: will begin and be removed\\n__Participants__: <@&12345>'
 
-    # Notice time = 40: will only notify the fourth meeting since
-    # the second and third are marked and canceled respectively.
-    # First has been marked as soon, so will not notify again.
-    >>> notify(meetings, EPOCH, 40)
-    '**No description** will begin soon!\\n## 4. No description\\n<t:40:F> (<t:40:R>)\\n__No participants__ 🧐'
-    >>> m2.has_labels(SOON_LABEL) and m3.has_labels(SOON_LABEL)
-    True
+    >>> m0.has_labels(SOON_LABEL) and m2.has_labels(SOON_LABEL)
+    ['soon']
+
+    >>> notify_meetings(meetings, EPOCH, 20)
+    '**no description** will begin soon!\\n## 5. no description\\n<t:20:F> (<t:20:R>)\\n__No participants__ 🧐'
+
+    >>> m3.has_labels(SOON_LABEL)
+    ['soon']
 
     >>> meetings = deepcopy(SAMPLE_MEETINGS)
 
-    # Notice time = 40: will notify both first and fourth meeting.
-    >>> notify(meetings, EPOCH, 40)
-    'The following meetings will begin soon!\\n## 1. No labels, soon\\n<t:10:F> (<t:10:R>)\\nWill notify and be marked as soon.\\n__Participants__: <@&12345>\\n## 4. No description\\n<t:40:F> (<t:40:R>)\\n__No participants__ 🧐'
+    >>> notify_meetings(meetings, EPOCH, 20)
+    'The following meetings will begin soon!\\n## 1. past\\n<t:0:F> (<t:0:R>)\\nnotify: will notify and mark as soon. begin: will begin and be removed\\n__Participants__: <@&12345>\\n## 5. no description\\n<t:20:F> (<t:20:R>)\\n__No participants__ 🧐'
     '''
     output_list = []
 
@@ -152,10 +174,67 @@ def notify(meetings: list[Meeting], now: MeetingTime, notice_time_secs: int) -> 
 
     # If there are meetings to notify, return output.
     if num_outputs > 1: return f'The following meetings will begin soon!\n{'\n'.join(output_list)}'
-    if num_outputs == 1: return f'**{first_meeting.get_title()}** will begin soon!\n{output_list[0]}'
+    if num_outputs == 1: return f'{first_meeting.get_title(True)} will begin soon!\n{output_list[0]}'
     
     # Otherwise, there are no meetings to notify, so don't print anything.
     return None
+
+
+def begin_meetings(meetings: list[Meeting], now: MeetingTime) -> str:
+    '''
+    Return a string of begin messages for all active meetings that have begun.
+    For such meetings, remove regular meetings for the meetings list, and
+    clone recurring meetings with the appropriate time increment.
+
+    Sample Usage:
+    >>> from copy import deepcopy
+    >>> from frodo_meet_data import SAMPLE_MEETINGS, EPOCH
+
+    >>> meetings = deepcopy(SAMPLE_MEETINGS)
+
+    >>> begin_meetings(meetings, EPOCH)
+    '**past** has started! Happy meeting! 🎈\\n**past, has soon, daily, multiple participants** has started and was cloned same time tomorrow! Happy meeting! 🎈\\n'
+
+    >>> [meeting.get_title() for meeting in meetings]
+    ['soon, canceled', 'no description', 'not soon', 'past, has soon, daily, multiple participants', 'past, weekly, paused, no participants']
+
+    >>> meetings[3].get_time().get_timestamp()
+    86400.0
+
+    >>> meetings[4].get_time().get_timestamp()
+    604800.0
+
+    >>> meetings[3].get_time().get_timestamp() == RECURRING_LABELS['daily'][0]
+    True
+
+    >>> meetings[4].get_time().get_timestamp() == RECURRING_LABELS['weekly'][0]
+    True
+    '''
+    output = ''
+
+    # Check meetings until they're not past.
+    while meetings and meetings[0].is_past(now):
+
+        # Pop the current meeting from the meetings list.
+        curr_meeting = meetings.pop(0)
+
+        # If meeting is recurring, clone it with the appropriate time increment.
+        recurring_label = curr_meeting.has_labels(*RECURRING_LABELS.keys())
+        if recurring_label:
+            recurring_label_result = RECURRING_LABELS[recurring_label[0]]
+
+            clone = Meeting.clone(curr_meeting, recurring_label_result[0])
+            add_meeting(meetings, clone)
+
+            recurring_output = f' and was cloned same time {recurring_label_result[1]}'
+        
+        else: recurring_output = ''
+        
+        # If meeting is active, add it to begin.
+        if not curr_meeting.has_labels(*NON_BEGIN_LABELS):
+            output += f'{curr_meeting.get_title(True)} has started{recurring_output}! Happy meeting! 🎈\n'
+    
+    return output if output else None
 
 
 if __name__ == '__main__':

@@ -1,32 +1,45 @@
 {
     "meetings": [
         {
-            "title": "No labels, soon",
-            "time": 10.0,
-            "description": "Will notify and be marked as soon.",
+            "title": "past",
+            "time": 0.0,
+            "description": "notify: will notify and mark as soon. begin: will begin and be removed",
             "participants": [
-                "<@12345>"
+                "<@&12345>"
             ],
             "labels": [
 
             ]
         },
         {
-            "title": "Has soon, multiple participants",
-            "time": 20.0,
-            "description": "Will not notify since it is marked as soon.",
+            "title": "past, has soon, daily, multiple participants",
+            "time": 0.0,
+            "description": "notify: will not notify since marked as soon. begin: will begin, be removed, and be cloned tomorrow",
             "participants": [
-                "<@12345>",
-                "<@&67890>"
+                "<@&12345>",
+                "<@67890>"
             ],
             "labels": [
-                "soon"
+                "soon",
+                "daily"
             ]
         },
         {
-            "title": "Soon, canceled, no participants",
-            "time": 30.0,
-            "description": "Will not notify since it is canceled, will be marked as soon.",
+            "title": "past, weekly, paused, no participants",
+            "time": 0.0,
+            "description": "notify: will not notify since paused, will mark as soon. begin: will not begin since paused, will be removed, will be cloned next week",
+            "participants": [
+
+            ],
+            "labels": [
+                "weekly",
+                "paused"
+            ]
+        },
+        {
+            "title": "soon, canceled",
+            "time": 10.0,
+            "description": "notify: will not notify since canceled, will mark as soon",
             "participants": [
 
             ],
@@ -35,8 +48,8 @@
             ]
         },
         {
-            "title": "No description",
-            "time": 40.0,
+            "title": "no description",
+            "time": 20.0,
             "description": "",
             "participants": [
 
@@ -46,9 +59,9 @@
             ]
         },
         {
-            "title": "Not soon",
+            "title": "not soon",
             "time": 1000.0,
-            "description": "Will not notify nor be marked as soon since it's not within the notice time (e.g. 5 mins).",
+            "description": "will not notify or begin",
             "participants": [
                 
             ],

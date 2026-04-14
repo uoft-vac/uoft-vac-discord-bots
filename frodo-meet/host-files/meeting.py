@@ -3,6 +3,8 @@ Author: Sunny Lin
 Editors: 
 Last modified: Apr 6, 26
 '''
+from __future__ import annotations
+
 from re import sub
 
 from meeting_time import MeetingTime
@@ -15,9 +17,13 @@ WEEKLY_LABEL = 'weekly'
 DAILY_LABEL = 'daily'
 PAUSED_LABEL = 'paused' # All subsequent meetings will not notify (for recurring meetings).
 
-LABELS = (SOON_LABEL, CANCELED_LABEL, YEARLY_LABEL, WEEKLY_LABEL, DAILY_LABEL, PAUSED_LABEL)
-NON_NOTIFY_LABELS = (SOON_LABEL, CANCELED_LABEL, PAUSED_LABEL)
-RECURRING_LABELS = (YEARLY_LABEL, WEEKLY_LABEL, DAILY_LABEL)
+NON_BEGIN_LABELS = (CANCELED_LABEL, PAUSED_LABEL)
+NON_NOTIFY_LABELS = (SOON_LABEL,) + NON_BEGIN_LABELS
+RECURRING_LABELS = { # Map recurring labels to corresponding number of seconds to increment the clone.
+    YEARLY_LABEL: (365 * 24 * 60 * 60, 'next year'),
+    WEEKLY_LABEL: (7 * 24 * 60 * 60, 'next week'),
+    DAILY_LABEL: (24 * 60 * 60, 'tomorrow')
+}
 
 
 class Meeting:
@@ -49,13 +55,23 @@ class Meeting:
     # INITS
 
     @classmethod
-    def from_file(cls, entry_data: dict) -> 'Meeting':
+    def from_file(cls, entry_data: dict) -> Meeting:
         return cls(
             entry_data['title'],
             MeetingTime(entry_data['time']),
             entry_data['description'],
             entry_data['participants'],
             entry_data['labels'],
+        )
+    
+    @classmethod
+    def clone(cls, original: Meeting, time_inc: int) -> Meeting:
+        return cls(
+            original.get_title(),
+            MeetingTime(original.get_time().get_timestamp() + time_inc),
+            original.get_description(),
+            original.get_participants(),
+            original.get_labels()
         )
     
 
@@ -101,10 +117,9 @@ class Meeting:
 
             # If not printing to ping, replace all pings with the corresponding role/user's names.
             if ids_to_names != None:
-                print(ids_to_names)
+                # print(ids_to_names)
                 
                 def repl(match): return ids_to_names.get(match.group(1), match.group(0))
-                
                 output = sub(r'<@&?(\d+)>', repl, output)
         
         else: output += f'\n__No participants__ 🧐'
@@ -181,30 +196,37 @@ class Meeting:
         return not ('canceled' in labels or 'paused' in labels)
     
 
-    def __lt__(self, other: 'Meeting') -> bool:
-        return \
-            self.get_time().get_timestamp() < \
-            other.get_time().get_timestamp()
-    
-
-    def has_labels(self, *labels: str) -> bool:
-        for label in labels:
-            if label.strip().lower() in self.get_labels():
-                return True
-        
-        return False
+    def has_labels(self, *labels: str) -> list[str]:
+        return list(
+            set(self.get_labels()) &
+            set(labels)
+        )
     
 
     def is_soon(self, now: MeetingTime, notify_time_secs: int) -> bool:
         return self.get_time().is_within_timeframe(now, notify_time_secs)
     
 
-    def get_title(self) -> str: return self._title
+    def is_past(self, now: MeetingTime) -> bool:
+        return self.get_time().is_within_timeframe(now, 0)
+    
+
+    # OPERATIONS
+
+    def __lt__(self, other: Meeting) -> bool:
+        return \
+            self.get_time().get_timestamp() < \
+            other.get_time().get_timestamp()
+    
+
+    # GETTERS
+    def get_title(self, bold: bool = False) -> str: return f'**{self._title}**' if bold else self._title
     def get_time(self) -> MeetingTime: return self._time
     def get_description(self) -> str: return self._description
     def get_participants(self) -> list[str]: return self._participants
     def get_labels(self) -> list[str]: return self._labels
 
+    # SETTERS
     def set_title(self, title: str) -> None: self._title = title
     def set_time(self, time: MeetingTime) -> None: self._time = time
     def set_description(self, description: str) -> None: self._description = description

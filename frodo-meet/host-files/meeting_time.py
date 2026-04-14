@@ -3,6 +3,8 @@ Author: Sunny Lin
 Editors: 
 Last modified: Apr 7, 26
 '''
+from __future__ import annotations
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from time import time
@@ -91,11 +93,11 @@ class MeetingTime:
     # INITS
 
     @classmethod
-    def from_args(cls, year: int, month: int, day: int, hour: int, minute: int) -> 'MeetingTime':
+    def from_args(cls, year: int, month: int, day: int, hour: int, minute: int) -> MeetingTime:
         return cls(datetime(year, month, day, hour, minute, tzinfo=TORONTO_TIMEZONE).timestamp())
     
     @classmethod
-    def from_input(cls, input: str):
+    def from_input(cls, input: str) -> MeetingTime | str:
         args = parse_input(input, TIME_BREAKPOINTS_RE)
 
         # Year, month, day, hour, minute.
@@ -116,23 +118,38 @@ class MeetingTime:
         return cls(datetime(*init_args, tzinfo=TORONTO_TIMEZONE).timestamp())
     
     @classmethod
-    def get_now(cls) -> 'MeetingTime': return cls(time())
+    def get_now(cls) -> MeetingTime: return cls(time())
 
 
     # INSTANCE METHODS
 
     def to_discord(self, relative: bool = False) -> str:
         return f'<t:{int(self.get_timestamp())}:{'F' if not relative else 'R'}>'
-    
-
-    def is_within_timeframe(self, other: 'MeetingTime', timeframe_secs: int) -> bool:
-        return abs((self - other).get_timestamp()) <= timeframe_secs
 
 
-    def __sub__(self, other: 'MeetingTime') -> 'MeetingTime':
-        return MeetingTime(self.get_timestamp() - other.get_timestamp())
+    def is_within_timeframe(self, other: MeetingTime | int, timeframe_secs: int) -> bool:
+        return (self - other).get_timestamp() <= timeframe_secs
 
 
+    # OPERATIONS
+
+    def __add__(self, other: MeetingTime | int) -> MeetingTime:
+        if isinstance(other, MeetingTime):
+            return MeetingTime(self.get_timestamp() + other.get_timestamp())
+        
+        if isinstance(other, int):
+            return MeetingTime(self.get_timestamp() + other)
+        
+        return NotImplemented
+
+    def __sub__(self, other: MeetingTime | int) -> MeetingTime:
+        return self + (-other)
+
+    def __neg__(self) -> MeetingTime:
+        return MeetingTime(-self.get_timestamp())
+
+
+    # GETTERS
     def get_year(self) -> int: return self._year
     def get_month(self) -> int: return self._month
     def get_day(self) -> int: return self._day

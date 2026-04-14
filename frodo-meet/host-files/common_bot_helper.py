@@ -11,6 +11,7 @@ from json import load, dump
 from re import split
 
 RESPONSE_TIMEOUT = 60 # Bots will stop waiting for responses after this number of seconds.
+WORD_LIMIT = 2000 # Word limit for Discord messages; might vary, but this is a safe value.
 
 
 # FILE FUNCTIONS
@@ -65,7 +66,7 @@ def parse_input(input: str, breakpoints_re: str) -> list[str]:
 
 # OUTPUT FUNCTIONS
 
-def chop_output(output: str, limit: int) -> tuple[str]:
+def chop_output(output: str, word_limit: int = WORD_LIMIT) -> tuple[str]:
     '''
     Given a string to be printed to Discord, return a tuple containing chopped parts of the string,
     where the chops are at line breaks and each substring is under the given word limit.
@@ -110,7 +111,7 @@ def chop_output(output: str, limit: int) -> tuple[str]:
 
         # If the length of the substring exceeds the minimum and it contains at least one line break,
         # append the previous substring to the output list and start from the start of the current substring.
-        if len(substring) > limit and start != end - 1:
+        if len(substring) > word_limit and start != end - 1:
             chopped.append('\n'.join(lines[start: end - 1]))
             start = end - 1
 
@@ -119,7 +120,7 @@ def chop_output(output: str, limit: int) -> tuple[str]:
 
             # If the length of the substring is equal to the minimum,
             # append the current substring to the output list and start from the end of the current substring.
-            if len(substring) == limit:
+            if len(substring) == word_limit:
                 chopped.append(substring)
                 start = end
 
