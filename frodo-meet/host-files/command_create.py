@@ -3,7 +3,7 @@
 from discord import Interaction
 from discord.ui import Modal, TextInput
 
-from common_bot_helper import get_response, ConfirmationViewDefault, NULL_SELECT_VALUE
+from common.common_bot_helper import get_response, ConfirmationViewDefault, NULL_SELECT_VALUE
 
 from frodo_meet_helper import add_meeting, is_title_taken, parse_participants
 from frodo_meet_discord_views import RecurrenceSelectView

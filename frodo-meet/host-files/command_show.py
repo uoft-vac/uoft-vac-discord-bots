@@ -2,7 +2,7 @@
 '''
 from discord import Interaction
 
-from common_bot_helper import parse_input
+from common.common_bot_helper import parse_input
 
 from frodo_meet_helper import get_meetings_to_discord
 

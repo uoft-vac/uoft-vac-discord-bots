@@ -2,7 +2,7 @@
 '''
 from pathlib import Path
 
-from common_bot_helper import read_json_file, write_json_file
+from common.common_bot_helper import read_json_file, write_json_file
 
 from meeting import Meeting,\
     ATTRIBUTE_TITLE,\

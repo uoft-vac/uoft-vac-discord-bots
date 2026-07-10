@@ -2,7 +2,7 @@
 '''
 from discord import Interaction
 
-from common_bot_helper import ConfirmationViewDefault
+from common.common_bot_helper import ConfirmationViewDefault
 
 from frodo_meet_helper import get_meetings_to_discord, find_meeting
 from frodo_meet_discord_views import MeetingSelectView

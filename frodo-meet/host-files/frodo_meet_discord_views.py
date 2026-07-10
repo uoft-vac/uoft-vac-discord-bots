@@ -3,7 +3,7 @@
 from discord import Interaction, SelectOption
 from discord.ui import View, Select
 
-from common_bot_helper import RESPONSE_TIMEOUT, NULL_SELECT_VALUE, MAX_SELECTS
+from common.common_bot_helper import RESPONSE_TIMEOUT, NULL_SELECT_VALUE, MAX_SELECTS
 
 from frodo_meet_helper import find_meeting
 

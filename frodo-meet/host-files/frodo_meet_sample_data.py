@@ -1,6 +1,6 @@
 '''Frodo Meet - Sample Data
 '''
-from common_bot_helper import read_json_file
+from common.common_bot_helper import read_json_file
 
 from frodo_meet_data import read_meetings_from_data
 

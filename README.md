@@ -12,6 +12,8 @@ Since the repository is public, this means not pushing any files containing this
 Instead, keep this data in **environment files** only, which should be in [.gitignore](.gitignore).
 
 Unauthorised access to tokens could allow someone to **take control of the bots**, thereby causing damage to them and/or the Discord server(s).
+\
+If you know or even suspect someone has unauthorised access to this data, <u>**regenerate the bot's token immediately**</u>.
 
 ---
 ### Implementation
@@ -84,8 +86,6 @@ And last but not least, <mark>be critical, be responsible, be respectful, be hum
 Let's make VAC **better than it was before**!
 
 Oh, and <u>have fun</u> as well ; )
-
-Test Edit
 
 ### Cheers!
 \- SL

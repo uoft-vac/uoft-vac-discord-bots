@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from common_bot_helper import parse_input
+from common.common_bot_helper import parse_input
 
 TORONTO_TIMEZONE = ZoneInfo("America/Toronto")
 

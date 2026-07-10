@@ -5,7 +5,7 @@ from discord.ui import View, Select
 
 from copy import deepcopy
 
-from common_bot_helper import get_response, ConfirmationViewDefault, RESPONSE_TIMEOUT, NULL_SELECT_VALUE
+from common.common_bot_helper import get_response, ConfirmationViewDefault, RESPONSE_TIMEOUT, NULL_SELECT_VALUE
 
 from frodo_meet_helper import\
     get_meetings_to_discord,\

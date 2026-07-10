@@ -1,3 +1,15 @@
 {
-    "meetings": []
+    "meetings": [
+        {
+            "title": "hi",
+            "time": 1783807200.0,
+            "description": "hi",
+            "participants": [
+                "<@580174011703492658>"
+            ],
+            "recurrence": "",
+            "active": true,
+            "soon": false
+        }
+    ]
 }
