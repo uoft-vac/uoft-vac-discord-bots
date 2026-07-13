@@ -3,7 +3,7 @@
 **/venv/
 
 # Bot data
-frodo-meet/host-files/meetings_data.json
+frodo-meet/bot/meetings_data.json
 
 # Garbage
 .DS_Store

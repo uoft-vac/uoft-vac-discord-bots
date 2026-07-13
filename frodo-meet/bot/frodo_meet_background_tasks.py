@@ -26,8 +26,8 @@ def notify_meetings(meetings: list[Meeting], now: MeetingTime, notice_time_secs:
         # no subsequent meetings can be since they are sorted, so stop checking.
         if not curr_meeting.is_soon(now, notice_time_secs): break
 
-        # If meeting is inactive, skip.
-        if not curr_meeting.get_active():
+        # If meeting has been notified or is inactive, skip.
+        if curr_meeting.get_soon() or not curr_meeting.get_active():
             # Mark meeting as soon.
             curr_meeting.set_soon(True)
             continue
