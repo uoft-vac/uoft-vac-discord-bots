@@ -4,7 +4,13 @@ from discord import Interaction
 
 from common.util import ConfirmationViewDefault
 
-from frodo_meet_helper import get_meetings_to_discord, find_meeting, remove_meeting
+from frodo_meet_helper import (
+    get_meetings_to_discord,
+    find_meeting,
+    remove_meeting,
+    dm_meeting,
+    build_failed_dm_err,
+)
 from frodo_meet_discord_views import MeetingSelectView
 from frodo_meet_data import save_meetings
 from meeting import Meeting
@@ -30,12 +36,12 @@ async def delete_meeting(
         await interaction.response.send_message(
             content = (
                 f'Enter the title or index of the meeting you want to delete:\n'
-                f'{get_meetings_to_discord(('all',), meetings, None)}'
+                f'{get_meetings_to_discord(meetings, None, ('all',))}'
             ),
             view = MeetingSelectView(
                 on_meeting_select,
                 meetings,
-                ids_to_names
+                ids_to_names = ids_to_names
             )
         )
         return
@@ -52,8 +58,8 @@ async def delete_meeting(
     # Confirmation.
     print('Got target meeting, sending confirmation view.')
     await interaction.response.send_message(
-        content = build_confirmation_content(ids_to_names, target_meeting),
-        view = build_confirmation_view(meetings, target_meeting)
+        content = build_confirmation_content(target_meeting, ids_to_names),
+        view = build_confirmation_view(meetings, target_meeting, ids_to_names)
     )
 
 
@@ -62,15 +68,15 @@ async def delete_meeting(
 async def on_meeting_select(
     interaction: Interaction,
     meetings: list[Meeting],
-    ids_to_names: dict[str: str],
-    target_meeting: Meeting
+    target_meeting: Meeting,
+    ids_to_names: dict[str: str]
 ) -> None:
     # Confirmation.
     print('In on meeting select, sending confirmation view.')
 
     await interaction.response.edit_message(
-        content = build_confirmation_content(ids_to_names, target_meeting),
-        view = build_confirmation_view(meetings, target_meeting)
+        content = build_confirmation_content(target_meeting, ids_to_names),
+        view = build_confirmation_view(meetings, target_meeting, ids_to_names)
     )
 
 
@@ -80,6 +86,7 @@ async def on_confirm(
     interaction: Interaction,
     meetings: list[Meeting],
     target_meeting: Meeting,
+    ids_to_names: dict[str: str],
     **_
 ) -> None:
     print('In on confirm, removing target meeting.')
@@ -97,9 +104,24 @@ async def on_confirm(
     print('Target meeting removed, data saved.')
 
     await interaction.response.edit_message(
-        content = f'{target_meeting.get_title(True)} has been deleted! 💥',
+        content = (
+            f'{target_meeting.get_title(True)} has been __deleted__! 💥\n'
+            'More free time on the calendar! 😎\n'
+            f'{' '.join(target_meeting.get_participants())}'
+        ),
         view = None
     )
+
+    failed_dm_users = await dm_meeting(interaction.client, target_meeting, (
+        f'Letting you know that a meeting you\'re in has been **deleted**:\n'
+        f'{target_meeting.to_discord(ids_to_names = ids_to_names)}\n\n'
+        'More free time on the calendar! 😎'
+    ), ids_to_names)
+
+    if failed_dm_users: await interaction.followup.send(
+        build_failed_dm_err(failed_dm_users, ids_to_names)
+    )
+    print('DMs have been sent.')
     
     print('Delete meeting command end, confirmed.')
 
@@ -111,24 +133,29 @@ async def on_cancel(
     print('In on cancel.')
 
     await interaction.response.edit_message(
-        content = f'{target_meeting.get_title(True)} was spared! 😇',
+        content = f'{target_meeting.get_title(True)} was __spared__! 😇',
         view = None
     )
 
     print('Delete meeting command end, cancelled.')
 
 
-def build_confirmation_content(ids_to_names: dict[str: str], target_meeting: Meeting) -> str:
+def build_confirmation_content(target_meeting: Meeting, ids_to_names: dict[str: str]) -> str:
     return (
         'Target meeting:\n'
         f'{target_meeting.to_discord(full = True, ids_to_names = ids_to_names,)}\n\n'
         'Would you like to delete this meeting?'
     )
 
-def build_confirmation_view(meetings: list[Meeting], target_meeting: Meeting) -> ConfirmationViewDefault:
+def build_confirmation_view(
+    meetings: list[Meeting],
+    target_meeting: Meeting,
+    ids_to_names: dict[str: str]
+) -> ConfirmationViewDefault:
     return ConfirmationViewDefault(
         on_confirm = on_confirm,
         on_cancel = on_cancel,
         meetings = meetings,
-        target_meeting = target_meeting
+        target_meeting = target_meeting,
+        ids_to_names = ids_to_names
     )

@@ -1,6 +1,13 @@
 '''Frodo Meet - Helper
 '''
-from discord import Message
+from discord import Message, User
+from discord.ext.commands import Bot
+
+from common.util import (
+    get_users_from_ping,
+    dm_user,
+    sub_ids_with_names,
+)
 
 from meeting import Meeting
 
@@ -118,7 +125,7 @@ def build_find_meeting_index_err(num_meetings: int) -> str:
     return f'Given index is invalid; must be **1–{num_meetings}**. 🧐'
 
 def build_find_meeting_title_err(title: str) -> str:
-    return f'No meeting has the title {title}. 🧐'
+    return f'No meeting has the title **{title}**. 🧐'
 
 
 def add_meeting(meetings: list[Meeting], new_meeting: Meeting) -> int:
@@ -167,6 +174,39 @@ def parse_participants(message: Message) -> list[str]:
         [f'<@&{role.id}>' for role in message.role_mentions] +
         [f'<@{user.id}>' for user in message.mentions]
     )
+
+
+async def dm_meeting(bot: Bot, meeting: Meeting, message: str, ids_to_names: dict[str: str]) -> list[User]:
+    '''
+    DM all relevant participants a given message.
+    Return a list of users who were failed to DM, if any.
+
+    Note: the given message is IN ADDITION to the greeting on the first line;
+    the greeting is sent automatically in this function.
+    '''
+    failed_users: list[User] = []
+
+    for ping in meeting.get_dm():
+        users: list[User] = await get_users_from_ping(bot, ping)
+
+        for user in users:
+            if await dm_user(user, (
+                f'Hey, {sub_ids_with_names(f'<@{user.id}>', ids_to_names)}! 👋\n'
+                f'{message}'
+            )) == -1:
+                failed_users.append(user)
+    
+    return failed_users
+
+
+def build_failed_dm_err(failed_users: list[User], ids_to_names: dict[str: str]) -> str:
+    return (
+        f'The following user(s) could not be DMed to be notified 🧐: '
+        f'{sub_ids_with_names(
+            ', '.join([f'**<@{user.id}>**' for user in failed_users]),
+            ids_to_names
+        )}'
+    ) if failed_users else None
 
 
 if __name__ == '__main__':

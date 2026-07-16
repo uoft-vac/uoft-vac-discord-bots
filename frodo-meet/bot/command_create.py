@@ -3,9 +3,19 @@
 from discord import Interaction
 from discord.ui import Modal, TextInput
 
-from common.util import get_response, ConfirmationViewDefault, NULL_SELECT_VALUE
+from common.util import (
+    get_response,
+    ConfirmationViewDefault,
+    NULL_SELECT_VALUE,
+)
 
-from frodo_meet_helper import add_meeting, is_title_taken, parse_participants
+from frodo_meet_helper import (
+    add_meeting,
+    is_title_taken,
+    parse_participants,
+    dm_meeting, 
+    build_failed_dm_err,
+)
 from frodo_meet_discord_views import RecurrenceSelectView
 from frodo_meet_data import save_meetings
 from meeting import Meeting
@@ -149,6 +159,7 @@ async def on_confirm(
     interaction: Interaction,
     meetings: list[Meeting],
     new_meeting: Meeting,
+    ids_to_names: dict[str: str],
     **_
 ) -> None:
     print('In on confirm, adding meeting.')
@@ -158,9 +169,24 @@ async def on_confirm(
     print('Meeting added, data saved.')
 
     await interaction.message.edit(
-        content = f'{new_meeting.get_title(True)} has been created! ✨',
+        content = (
+            f'{new_meeting.get_title(True)} has been __created__! ✨\n'
+            f'{new_meeting.to_discord(full = True, ids_to_names = ids_to_names)}\n\n'
+            'See y\'alls then! 👀'
+        ),
         view = None
     )
+
+    failed_dm_users = await dm_meeting(interaction.client, new_meeting, (
+        'Letting you know that you\'ve been **added to a new meeting**:\n'
+        f'{new_meeting.to_discord(full = True, ids_to_names = ids_to_names)}\n\n'
+        'See you there! 👀'
+    ), ids_to_names)
+
+    if failed_dm_users: await interaction.followup.send(
+        build_failed_dm_err(failed_dm_users, ids_to_names)
+    )
+    print('DMs have been sent.')
 
     print('Create meeting command end, confirmed.')
 
@@ -172,7 +198,7 @@ async def on_cancel(
     print('In on cancel.')
 
     await interaction.message.edit(
-        content = f'{new_meeting.get_title(True)} has been discarded! 🗑️',
+        content = f'{new_meeting.get_title(True)} has been __discarded__! 🗑️',
         view = None
     )
 

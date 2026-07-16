@@ -3,13 +3,18 @@
 from discord import Interaction, SelectOption
 from discord.ui import View, Select
 
-from common.util import RESPONSE_TIMEOUT, NULL_SELECT_VALUE, MAX_SELECTS
+from common.util import (
+    RESPONSE_TIMEOUT,
+    NULL_SELECT_VALUE,
+    MAX_SELECTS,
+)
 
 from frodo_meet_helper import find_meeting
-from meeting import Meeting,\
-    RECURRENCE_DAILY,\
-    RECURRENCE_WEEKLY,\
-    RECURRENCE_YEARLY
+from meeting import (Meeting,
+    RECURRENCE_DAILY,
+    RECURRENCE_WEEKLY,
+    RECURRENCE_YEARLY,
+)
 
 
 # MEETING SELECT
@@ -18,11 +23,10 @@ class MeetingSelectView(View):
     def __init__(self,
         on_select: callable,
         meetings: list[Meeting],
-        timeout: float = RESPONSE_TIMEOUT,
         **data: dict
     ) -> None:
         print('In meeting select view, awaiting target meeting select…')
-        super().__init__(timeout = timeout)
+        super().__init__(timeout = RESPONSE_TIMEOUT)
 
         self.add_item(MeetingSelect(
             on_select,
@@ -73,6 +77,7 @@ class MeetingSelect(Select):
         await self._on_select(
             interaction,
             self._meetings,
+            target_meeting,
             **self._data
         )
 
@@ -82,11 +87,10 @@ class MeetingSelect(Select):
 class RecurrenceSelectView(View):
     def __init__(self,
         on_select: callable,
-        timeout: float = RESPONSE_TIMEOUT,
         **data: dict
     ) -> None:
         print('In recurrence select view, awaiting recurrence select…')
-        super().__init__(timeout = timeout)
+        super().__init__(timeout = RESPONSE_TIMEOUT)
 
         self.add_item(RecurrenceSelect(on_select, data))
 

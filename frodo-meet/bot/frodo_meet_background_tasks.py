@@ -1,11 +1,13 @@
 '''Frodo Meet - Background Tasks
 '''
-from discord import Forbidden
+from discord import User
 from discord.ext.commands import Bot
 
-from re import search
-
-from common.util import sub_ids_with_names
+from common.util import (
+    get_users_from_ping,
+    sub_ids_with_names,
+    dm_user,
+)
 
 from frodo_meet_helper import add_meeting
 from meeting import Meeting, RECURRENCE_MAPPING, RECURRENCE_INC, RECURRENCE_MESSAGE
@@ -45,7 +47,7 @@ def notify_meetings(meetings: list[Meeting], now: MeetingTime, notice_time_secs:
         output_list.append(curr_meeting.to_discord(index = meetings_i, full = True))
 
         # Record pings by dms.
-        for participant_dm in curr_meeting.get_pingsbydm():
+        for participant_dm in curr_meeting.get_dm():
             to_dm.setdefault(participant_dm, []).append(curr_meeting)
 
         # Mark meeting as soon.
@@ -104,21 +106,8 @@ async def dm_notifications(
     '''
     for ping, meetings in to_dm.items():
 
-        # Get ID from ping.
-        id = int(search(r'\d+', ping).group())
-
-        # If ID belongs to a user, notify just that user.
-        if '&' not in ping:
-            user = await bot.fetch_user(id)
-            users = [user]
-        
-        # Otherwise, ID belongs to a role, so notify all members of that role.
-        else:
-            for guild in bot.guilds:
-                role = guild.get_role(id)
-
-                if role is not None:
-                    users = role.members
+        # Get users from ping.
+        users: list[User] = get_users_from_ping(bot, ping)
 
         # Construct message.
         message = (
@@ -130,24 +119,22 @@ async def dm_notifications(
             ])}'
         )
 
-        failed_ids = []
+        failed_users: list[User] = []
 
         # DM all users.
+        # If failed to DM, add them to print in the notify channel.
         for user in users:
-            try: await user.send(message)
-
-            # If failed to DM, add them to print in the notify channel.
-            except Forbidden:
-                print(f'Failed to DM {user}.')
-                failed_ids.append(user.id)
+            if await dm_user(user, message) == -1:
+                print(f'Failed to DM {sub_ids_with_names(f'<@{user.id}>')}.')
+                failed_users.append(user)
         
         return (
             f'The following user(s) could not be DMed to be notified 🧐: '
             f'{sub_ids_with_names(
-                ', '.join([f'**<@{id}>**' for id in failed_ids]),
+                ', '.join([f'**<@{user.id}>**' for user in failed_users]),
                 ids_to_names
             )}'
-        ) if failed_ids else None
+        ) if failed_users else None
 
 
 if __name__ == '__main__':

@@ -4,15 +4,16 @@ from pathlib import Path
 
 from common.util import read_json_file, write_json_file
 
-from meeting import Meeting,\
-    ATTRIBUTE_TITLE,\
-    ATTRIBUTE_TIME,\
-    ATTRIBUTE_DESCRIPTION,\
-    ATTRIBUTE_PARTICIPANTS,\
-    ATTRIBUTE_DM,\
-    ATTRIBUTE_RECURRENCE,\
-    ATTRIBUTE_ACTIVE,\
-    ATTRIBUTE_SOON
+from meeting import (Meeting,
+    ATTRIBUTE_TITLE,
+    ATTRIBUTE_TIME,
+    ATTRIBUTE_DESCRIPTION,
+    ATTRIBUTE_PARTICIPANTS,
+    ATTRIBUTE_DM,
+    ATTRIBUTE_RECURRENCE,
+    ATTRIBUTE_ACTIVE,
+    ATTRIBUTE_SOON,
+)
 
 
 DATA_FILE_PATH = Path(__file__).resolve().parent / 'meetings_data.json'
@@ -35,7 +36,7 @@ def save_meetings() -> None:
         ATTRIBUTE_TIME: meeting.get_time().get_timestamp(),
         ATTRIBUTE_DESCRIPTION: meeting.get_description(),
         ATTRIBUTE_PARTICIPANTS: meeting.get_participants(),
-        ATTRIBUTE_DM: meeting.get_pingsbydm(),
+        ATTRIBUTE_DM: meeting.get_dm(),
         ATTRIBUTE_RECURRENCE: meeting.get_recurrence(),
         ATTRIBUTE_ACTIVE: meeting.get_active(),
         ATTRIBUTE_SOON: meeting.get_soon()

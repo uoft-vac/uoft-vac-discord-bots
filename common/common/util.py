@@ -3,14 +3,15 @@
 Functions that many bots will likely find useful.
 To be deployed along with bot host files.
 '''
-from discord import Interaction, Message, ButtonStyle, Guild
+from discord import Interaction, Message, ButtonStyle, User, Forbidden, Guild
 from discord.ui import View, button, Button
+from discord.ext.commands import Bot
 
 from dotenv import load_dotenv
 from pathlib import Path
 
 from json import load, dump
-from re import split, sub
+from re import split, Match, sub, search
 
 GETENV_BOT_TOKEN = 'BOT_TOKEN' # Common string used to get the bot's token from the environment (each bot should have their own environment).
 RESPONSE_TIMEOUT = 60 # Bots will stop waiting for responses after this number of seconds.
@@ -20,14 +21,14 @@ MAX_SELECTS = 25 # Max number of select options for one message (supposedly).
 DIVIDER_STR = '——————————' # To separate prints of background tasks from those of commands, if you wish.
 
 
-# MACRO FUNCTIONS
+# ENVIRONMENT
 
 def load_local_dotenv(file: str) -> None:
     '''Call dotenv.load_dotenv on the .env at the same level as the driver file.'''
     load_dotenv(Path(file).parent / '.env')
 
 
-# FILE FUNCTIONS
+# FILE
 
 def read_json_file(file_path: str) -> dict:
     with open(file_path, 'r') as f: return load((f))
@@ -36,7 +37,7 @@ def write_json_file(file_path: str, data: dict) -> None:
     with open(file_path, 'w') as f: dump(data, f, indent = 4)
 
 
-# INPUT FUNCTIONS
+# INPUT
 
 async def get_response(interaction: Interaction, timeout: float = RESPONSE_TIMEOUT) -> Message:
     '''
@@ -73,11 +74,10 @@ class ConfirmationViewDefault(View):
         self,
         on_confirm: callable,
         on_cancel: callable,
-        timeout: float = RESPONSE_TIMEOUT,
         **data: dict
     ):
         print('In confirmation view, awaiting confirmation…')
-        super().__init__(timeout = timeout)
+        super().__init__(timeout = RESPONSE_TIMEOUT)
 
         self._on_confirm = on_confirm
         self._on_cancel = on_cancel
@@ -107,7 +107,7 @@ def parse_input(input: str, breakpoints_re: str, lower: bool = True) -> list[str
     ]
 
 
-# OUTPUT FUNCTIONS
+# OUTPUT
 
 def chop_output(output: str, word_limit: int = WORD_LIMIT) -> tuple[str]:
     '''
@@ -178,12 +178,21 @@ def chop_output(output: str, word_limit: int = WORD_LIMIT) -> tuple[str]:
     return chopped
 
 
-# DISCORD DATA FUNCTIONS
+async def dm_user(user: User, message: str) -> int:
+    '''
+    DM a user with the given message.
+    Return 0 on success, -1 on fail.
+    '''
+    try:
+        await user.send(message)
+        return 0
+    except Forbidden: return -1
+
+
+# DISCORD ID MANIPULATION
 
 def get_ids_to_names(guild: Guild) -> dict[str: str]:
-    '''
-    Return a dictionary of ID-name pairs for the server's roles and members.
-    '''
+    '''Return a dictionary of ID-name pairs for the server's roles and members.'''
     roles_dict = {str(role.id): role.name for role in guild.roles}
     members_dict = {str(member.id): member.display_name for member in guild.members}
     # print(roles_dict, members_dict)
@@ -198,8 +207,36 @@ def sub_ids_with_names(output: str, ids_to_names: dict[str: str]) -> str:
     Precondition:
     - IDs must be valid from the server.
     '''
-    def repl(match): return ids_to_names.get(match.group(1), match.group(0))
+    def repl(match: Match) -> str:
+        return ids_to_names.get(match.group(1), match.group(0))
+    
     return sub(r'<@&?(\d+)>', repl, output)
+
+
+async def get_users_from_ping(bot: Bot, ping: str) -> list[User]:
+    '''
+    If given a user ping, return a list containing the user object.
+    If given a role ping, return a list of user objects of all members of that role.
+
+    Precondition:
+    - Ping is in correct format (<@…> or <@&…>)
+    '''
+    users: list[User] = []
+    # Get ID from ping.
+    id = int(search(r'\d+', ping).group())
+
+    # If ID belongs to a user, notify just that user.
+    if '&' not in ping:
+        user = await bot.fetch_user(id)
+        users = [user]
+    
+    # Otherwise, ID belongs to a role, so notify all members of that role.
+    else:
+        for guild in bot.guilds:
+            role = guild.get_role(id)
+            if role: users = role.members
+    
+    return users
 
 
 if __name__ == '__main__':

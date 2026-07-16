@@ -8,6 +8,7 @@ Stores and reads meeting data in meetings_data.json.
 
 Driver file.
 '''
+greet_on_boot = True # Toggleable
 
 from discord import Intents, Interaction, TextChannel
 from discord.ext import commands
@@ -15,7 +16,13 @@ from discord.ext import commands
 from asyncio import sleep
 from os import getcwd, getenv
 
-from common.util import load_local_dotenv, chop_output, get_ids_to_names, GETENV_BOT_TOKEN, DIVIDER_STR
+from common.util import (
+    load_local_dotenv,
+    chop_output,
+    get_ids_to_names,
+    GETENV_BOT_TOKEN,
+    DIVIDER_STR,
+)
 
 from frodo_meet_data import load_meetings, get_meetings, save_meetings
 from meeting_time import MeetingTime
@@ -51,7 +58,7 @@ async def on_ready():
     print(f'Logged in as {bot.user}.')
 
     notify_channel = bot.get_channel(int(getenv('NOTIFY_CHANNEL_ID')))
-    await notify_channel.send('Frodomeet clocking in! 🫡')
+    if greet_on_boot: await notify_channel.send('Frodomeet clocking in! 🫡')
 
     if background_task is not None:
         print('Background task already exists. 🧐')
@@ -132,9 +139,9 @@ async def edit_meeting(interaction: Interaction, target: str = None) -> None:
     name = 'toggle-active',
     description = 'Activate an inactive meeting, or deactivate an active meeting!'
 )
-async def toogle_active(interaction: Interaction, target: str = None) -> None:
+async def toggle_active(interaction: Interaction, target: str = None) -> None:
     print(
-        f'{DIVIDER_STR}'
+        f'{DIVIDER_STR}\n'
         f'Toggle active command prompted, calling command.'
     )
     await command_toggle_active.toggle_active(
@@ -143,6 +150,27 @@ async def toogle_active(interaction: Interaction, target: str = None) -> None:
         get_ids_to_names(interaction.guild),
         target
     )
+
+@command(
+    name = 'help-frodo-meet',
+    description = 'Need help with my functions? I got you!'
+)
+async def hi_frodo_meet(interaction: Interaction) -> None:
+    print(
+        f'{DIVIDER_STR}\n'
+        f'Help command prompted, calling command.'
+    )
+    ...
+
+@command(
+    name = 'hi-frodo-meet',
+)
+async def hi_frodo_meet(interaction: Interaction) -> None:
+    print(
+        f'{DIVIDER_STR}\n'
+        f'Hi command prompted, calling command.'
+    )
+    ...
 
 
 # BACKGROUND TASKS
