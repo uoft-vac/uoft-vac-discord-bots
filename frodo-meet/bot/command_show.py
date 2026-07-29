@@ -16,8 +16,7 @@ async def show_meetings(
     print('Show meetings command start.')
 
     await interaction.response.send_message(get_meetings_to_discord(
-        meetings,
-        parse_input(filters, ' ')
+        interaction, meetings, parse_input(filters, ' ')
     ))
 
     print('Show meetings command end.')

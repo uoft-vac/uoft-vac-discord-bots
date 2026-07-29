@@ -1,14 +1,22 @@
 '''Frodo Meet - Helper
 '''
-from discord import Guild, User
+from discord import Interaction, Guild, User
 
 from os import getenv
+
+from common.util import (
+    get_pings_to_names,
+)
 
 from frodo_meet_data import GETENV_EXEC_ROLE_ID
 from meeting import Meeting
 
 
-def get_meetings_to_discord(meetings: list[Meeting], filters: tuple[str]) -> str:
+def get_meetings_to_discord(
+    interaction: Interaction,
+    meetings: list[Meeting],
+    filters: tuple[str]
+) -> str:
     '''
     Display the meetings list in order.
     Along with displaying times, also include how much time the meeting is from now.
@@ -39,7 +47,9 @@ def get_meetings_to_discord(meetings: list[Meeting], filters: tuple[str]) -> str
         # Add meeting to print.
         output += f'{curr_meeting.to_discord(
             index = meetings_i,
-            full = 'full' in filters
+            pings_to_names = (
+                get_pings_to_names(interaction.guild) if 'full' in filters else None
+            )
         )}\n'
     
     return output if output else 'There are no meetings under such filters. 🧐'
@@ -173,7 +183,7 @@ def get_names_to_pings(guild: Guild) -> dict[str: str]:
     for member in guild.get_role(int(getenv(GETENV_EXEC_ROLE_ID))).members:
         names_to_pings[member.display_name.lower()] = f'<@{member.id}>'
     
-    # print(names_to_pings)
+    print(names_to_pings)
     return names_to_pings
 
 

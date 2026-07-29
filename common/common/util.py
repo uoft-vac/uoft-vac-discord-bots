@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 from json import load, dump
-from re import split, Match, sub, search
+from re import split, search
 
 GETENV_BOT_TOKEN = 'BOT_TOKEN' # Common string used to get the bot's token from the environment (each bot should have their own environment).
 RESPONSE_TIMEOUT = 60 # Bots will stop waiting for responses after this number of seconds.
@@ -207,27 +207,33 @@ async def restrict_to_channel(interaction: Interaction, channel: GuildChannel) -
     return False
 
 
-async def dm_users_from_names(
+async def dm_users_from_pings(
     bot: Bot,
-    names: list[str],
-    names_to_pings: dict[str: str],
+    pings: list[str],
+    pings_to_names: dict[str: str],
     message: str
 ) -> list[User]:
     '''
-    DM all users from the given names a given message.
+    DM all users from the given pings a given message.
     Return a list of users who were failed to DM, if any.
 
     Note: the given message is IN ADDITION to the greeting on the first line;
     the greeting is sent automatically in this function.
     '''
     failed_users: list[User] = []
+    sent_users: list[User] = []
 
-    for name in names:
-        users: list[User] = await get_users_from_name(bot, name, names_to_pings)
+    for ping in pings:
+        users: list[User] = await get_users_from_ping(bot, ping)
 
         for user in users:
+            # If message has already been sent to this user, skip.
+            if user in sent_users: continue
+            sent_users.append(user)
+
+            # Otherwise, send message.
             if await dm_user(user, (
-                f'Hey, {name.title()}! 👋\n'
+                f'Hey, {pings_to_names[f'<@{user.id}>']}! 👋\n'
                 f'{message}'
             )) == -1:
                 failed_users.append(user)
@@ -237,43 +243,26 @@ async def dm_users_from_names(
 
 # DISCORD ID MANIPULATION
 
-def get_ids_to_names(guild: Guild) -> dict[str: str]:
-    '''Return a dictionary of ID-name pairs for the server's roles and members.'''
-    roles_dict = {str(role.id): role.name for role in guild.roles}
-    members_dict = {str(member.id): member.display_name for member in guild.members}
+def get_pings_to_names(guild: Guild) -> dict[str: str]:
+    '''Return a dictionary of ping-name pairs for the guild's roles and members.'''
+    roles_dict = {f'<@&{role.id}>': role.name for role in guild.roles}
+    members_dict = {f'<@{member.id}>': member.display_name for member in guild.members}
     # print(roles_dict, members_dict)
 
     return roles_dict | members_dict
 
 
-def sub_ids_with_names(output: str, ids_to_names: dict[str: str]) -> str:
-    '''
-    Given a string, return it with all IDs replaced by their corresponding role or user server display name.
-
-    Precondition:
-    - IDs must be valid from the server.
-    '''
-    def repl(match: Match) -> str:
-        return ids_to_names.get(match.group(1), match.group(0))
-    
-    return sub(r'<@&?(\d+)>', repl, output)
-
-
-async def get_users_from_name(
+async def get_users_from_ping(
     bot: Bot,
-    name: str,
-    names_to_pings: dict[str: str]
+    ping: str,
 ) -> list[User]:
     '''
-    If given a role name, return a list of all members of that role as users.
-    If given a user name, return a list containing that user.
+    If given a role ping, return a list of all members of that role as users.
+    If given a user ping, return a list containing that user.
 
     If not found, return None.
     '''
     users: list[User] = []
-
-    ping = names_to_pings.get(name, None)
-    if not ping: return
 
     id = int(search(r'\d+', ping).group())
 

@@ -99,14 +99,14 @@ class Meeting:
             participants = original.get_participants(),
             dm = original.get_dm(),
             recurrence = original.get_recurrence(),
-            active = original.get_active()
-            # Set clone's soon to false.
+            active = original.get_active(),
+            soon = False # Always set clone's soon to false.
         )
     
 
     # INSTANCE METHODS
 
-    def to_discord(self, index: int = None, full: bool = False, names_to_pings: dict[str: str] = None) -> str:
+    def to_discord(self, index: int = None, pings_to_names: dict[str: str] = None) -> str:
         '''
         Return a string of the meeting's data to be sent in Discord.
         
@@ -183,7 +183,7 @@ class Meeting:
         output += f'\n{time.to_discord()} ({time.to_discord(True)})'
         
         # If not printing full, return output as it is.
-        if not full: return output
+        if not pings_to_names: return output
         
         # Otherwise, also add description, participants, and pings by dm.
 
@@ -192,21 +192,18 @@ class Meeting:
         if description: output += f'\n{description}'
 
         # Add participants on next line.
-        # If printing to ping, replace all names with corresponding pings.
         participants = self.get_participants()
         output += (
-            f'\n__Participants__: {(' ' if names_to_pings else ', ').join(
-                (names_to_pings.get(name, name) if names_to_pings else name.title())
-                for name in participants
+            f'\n__Participants__: {', '.join(
+                pings_to_names.get(ping, ping) for ping in participants
             )}'
-            if participants
-            else '\n__No participants__ 🧐'
+            if participants else '\n__No participants__ 🧐'
         )
         
         # Add pings by dm on next line, if any.
         dm = self.get_dm()
-        if dm: output += f'\n- __Ping by DM__: {' '.join(
-            [name.title() for name in dm]
+        if dm: output += f'\n- __Ping by DM__: {', '.join(
+            [pings_to_names.get(ping, ping) for ping in dm]
         )}'
         
         return output
@@ -338,25 +335,25 @@ class Meeting:
     def set_active(self, active: bool = True) -> None: self._active = active
     def set_soon(self, soon: bool = False) -> None: self._soon = soon
 
-    def add_names(self, names: list[str], target: Literal['participants', 'dm']) -> None:
+    def add_pings(self, pings: list[str], target: Literal['participants', 'dm']) -> None:
         '''
         Postcondition:
-        - names will only contain the ones successfully added.
+        - pings will only contain the ones successfully added.
         '''
         destination = self.get_participants() if target == 'participants' else self.get_dm()
-        for name in names:
-            if name not in destination: destination.append(name)
-            else: names.remove(name)
+        for ping in pings:
+            if ping not in destination: destination.append(ping)
+            else: pings.remove(ping)
     
-    def remove_names(self, names: list[str], target: Literal['participants', 'dm']) -> None:
+    def remove_pings(self, pings: list[str], target: Literal['participants', 'dm']) -> None:
         '''
         Postcondition:
-        - names will only contain the ones successfully removed.
+        - pings will only contain the ones successfully removed.
         '''
         destination = self.get_participants() if target == 'participants' else self.get_dm()
-        for name in names:
-            if name in destination: destination.remove(name)
-            else: names.remove(name)
+        for ping in pings:
+            if ping in destination: destination.remove(ping)
+            else: pings.remove(ping)
 
     def toggle_active(self) -> bool:
         new_active = not self.get_active()

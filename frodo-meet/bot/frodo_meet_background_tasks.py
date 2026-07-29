@@ -2,14 +2,18 @@
 '''
 from discord.ext.commands import Bot
 
+from os import getenv
+
 from common.util import (
-    dm_users_from_names,
+    get_pings_to_names,
+    dm_users_from_pings,
 )
 
 from frodo_meet_helper import (
     add_meeting,
     build_failed_dm_err,
 )
+from frodo_meet_data import GETENV_SERVER_ID
 from meeting import Meeting, RECURRENCE_MAPPING, RECURRENCE_INC, RECURRENCE_MESSAGE
 from meeting_time import MeetingTime
 
@@ -98,21 +102,21 @@ def begin_meetings(meetings: list[Meeting], now: MeetingTime) -> str:
     return output if output else None
 
 
-async def dm_notifications(
-    bot: Bot,
-    to_dm: dict[str, list[Meeting]],
-    names_to_pings: dict[str: str]
-) -> str:
+async def dm_notifications(bot: Bot, to_dm: dict[str, list[Meeting]]) -> str:
     '''
     Send notifications in DMs for all given names.
     If name is a role, send notifications for all members of that role.
     Return a string saying which users were failed to DM, if any.
     '''
+    pings_to_names = get_pings_to_names(
+        bot.get_guild(int(getenv(GETENV_SERVER_ID)))
+    )
+
     for name, meetings in to_dm.items():
-        failed_dm_users = await dm_users_from_names(bot, [name], names_to_pings, (
+        failed_dm_users = await dm_users_from_pings(bot, [name], pings_to_names, (
             'Here\'s a reminder that the following meeting(s) will begin soon:\n'
             f'{'\n'.join([
-                meeting.to_discord(full = True)
+                meeting.to_discord(pings_to_names = pings_to_names)
                 for meeting in meetings
             ])}'
         ))

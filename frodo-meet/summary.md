@@ -20,7 +20,6 @@ Each meeting object contains 7 attributes:
 1. **Participants**: list of pings (`list[str]`)
     - **Role** pings are represented by `<@&…>`, where … is the <u>role ID</u>.
     - **Member** pings are represented by `<@…>`, where … is the <u>user ID</u>.
-    - `everyone` and `here` will work but seem redundant for our purposes (for all execs, ping the exec role).
 1. **Pings by DM**: list of pings by DM (`list[str]`)
     - Same kind of data as <u>participants</u>.
 1. **Recurrence** (`str`)

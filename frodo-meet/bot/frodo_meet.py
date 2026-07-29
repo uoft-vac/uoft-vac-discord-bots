@@ -24,7 +24,6 @@ from common.util import (
     DIVIDER_STR,
 )
 
-from frodo_meet_helper import get_names_to_pings
 from frodo_meet_data import (
     load_meetings,
     get_meetings,
@@ -114,8 +113,7 @@ async def create_meeting(interaction: Interaction) -> None:
     )
     await command_create.create_meeting(
         interaction = interaction,
-        meetings = get_meetings(),
-        names_to_pings = get_names_to_pings(interaction.guild)
+        meetings = get_meetings()
     )
 
 
@@ -135,7 +133,6 @@ async def delete_meeting(interaction: Interaction, target: str = None) -> None:
     await command_delete.delete_meeting(
         interaction = interaction,
         meetings = get_meetings(),
-        names_to_pings = get_names_to_pings(interaction.guild),
         target = target
     )
 
@@ -156,7 +153,6 @@ async def edit_meeting(interaction: Interaction, target: str = None) -> None:
     await command_edit.edit_meeting(
         interaction = interaction,
         meetings = get_meetings(),
-        names_to_pings = get_names_to_pings(interaction.guild),
         target = target
     )
 
@@ -177,7 +173,6 @@ async def toggle_active(interaction: Interaction, target: str = None) -> None:
     await command_toggle_active.toggle_active(
         interaction = interaction,
         meetings = get_meetings(),
-        names_to_pings = get_names_to_pings(interaction.guild),
         target = target
     )
 
