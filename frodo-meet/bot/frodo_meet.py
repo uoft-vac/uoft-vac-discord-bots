@@ -20,6 +20,7 @@ from common.util import (
     load_local_dotenv,
     chop_output,
     restrict_to_channel,
+    get_pings_to_names,
     GETENV_BOT_TOKEN,
     DIVIDER_STR,
 )
@@ -227,13 +228,19 @@ async def auto_notify_n_begin(notify_channel: TextChannel, notice_time_secs: int
 
         meetings = get_meetings()
         now = MeetingTime.get_now()
+        pings_to_names = get_pings_to_names(notify_channel.guild)
 
         # Check for any meetings to notify and get the output.
-        notify_output, to_dm = notify_meetings(meetings, now, notice_time_secs)
+        notify_output, to_dm = notify_meetings(
+            meetings = meetings,
+            pings_to_names = pings_to_names,
+            now = now,
+            notice_time_secs = notice_time_secs
+        )
         print('Got notify result.')
 
         # Check for any meetings to begin and get the output.
-        begin_output = begin_meetings(meetings, now)
+        begin_output = begin_meetings(meetings = meetings, now = now)
         print('Got begin results.')
 
         # If meetings are modified, save data.
@@ -248,7 +255,11 @@ async def auto_notify_n_begin(notify_channel: TextChannel, notice_time_secs: int
 
         # If there are pings to dm, dm them.
         if to_dm:
-            failed_dms_output = await dm_notifications(bot, to_dm)
+            failed_dms_output = await dm_notifications(
+                bot = bot,
+                pings_to_names = pings_to_names,
+                to_dm = to_dm
+            )
             print('DMs have been sent!')
 
             if failed_dms_output: await notify_channel.send(failed_dms_output)

@@ -20,8 +20,8 @@ RECURRENCE_DAILY = 'daily'
 RECURRENCE_WEEKLY = 'weekly'
 RECURRENCE_YEARLY = 'yearly'
 
-RECURRENCE_INC = False
-RECURRENCE_MESSAGE = True
+RECURRENCE_INC = 0
+RECURRENCE_MESSAGE = 1
 RECURRENCE_MAPPING = { # Map recurring labels to corresponding number of seconds to increment the clone.
     RECURRENCE_DAILY: {
         RECURRENCE_INC: 24 * 60 * 60,

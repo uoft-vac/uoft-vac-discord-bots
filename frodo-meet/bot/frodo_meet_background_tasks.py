@@ -2,10 +2,7 @@
 '''
 from discord.ext.commands import Bot
 
-from os import getenv
-
 from common.util import (
-    get_pings_to_names,
     dm_users_from_pings,
 )
 
@@ -13,13 +10,17 @@ from frodo_meet_helper import (
     add_meeting,
     build_failed_dm_err,
 )
-from frodo_meet_data import GETENV_SERVER_ID
-from meeting import Meeting, RECURRENCE_MAPPING, RECURRENCE_INC, RECURRENCE_MESSAGE
+from meeting import (Meeting,
+    RECURRENCE_MAPPING,
+    RECURRENCE_INC,
+    RECURRENCE_MESSAGE,
+)
 from meeting_time import MeetingTime
 
 
 def notify_meetings(
     meetings: list[Meeting],
+    pings_to_names: dict[str: str],
     now: MeetingTime,
     notice_time_secs: int
 ) -> tuple[str, dict[str, list[Meeting]]]:
@@ -52,7 +53,12 @@ def notify_meetings(
         # Otherwise, notify it.
 
         # Add meeting to notify.
-        output_list.append(curr_meeting.to_discord(index = meetings_i, full = True))
+        output_list.append(f'{(
+            curr_meeting.to_discord(
+                index = meetings_i,
+                pings_to_names = pings_to_names)
+            )}\n{' '.join(curr_meeting.get_participants())}'
+        )
 
         # Record pings by dms.
         for participant_dm in curr_meeting.get_dm():
@@ -102,15 +108,16 @@ def begin_meetings(meetings: list[Meeting], now: MeetingTime) -> str:
     return output if output else None
 
 
-async def dm_notifications(bot: Bot, to_dm: dict[str, list[Meeting]]) -> str:
+async def dm_notifications(
+    bot: Bot,
+    pings_to_names: dict[str: str],
+    to_dm: dict[str, list[Meeting]]
+) -> str:
     '''
     Send notifications in DMs for all given names.
     If name is a role, send notifications for all members of that role.
     Return a string saying which users were failed to DM, if any.
     '''
-    pings_to_names = get_pings_to_names(
-        bot.get_guild(int(getenv(GETENV_SERVER_ID)))
-    )
 
     for name, meetings in to_dm.items():
         failed_dm_users = await dm_users_from_pings(bot, [name], pings_to_names, (
