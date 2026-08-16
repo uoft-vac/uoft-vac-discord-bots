@@ -203,7 +203,7 @@ class EditPropertySelect(Select):
         new_value_input = await get_response(interaction)
         print('Got new value.')
 
-        new_pings = []
+        updated_pings = []
         names_to_pings = get_names_to_pings(interaction.guild)
 
         # If editing title:
@@ -245,36 +245,36 @@ class EditPropertySelect(Select):
         # If adding participants:
         elif target_property == PARTICIPANTS_ADD:
             print('Adding participants.')
-            new_pings = [names_to_pings[name] for name in verify_names(
+            updated_pings = [names_to_pings[name] for name in verify_names(
                 parse_input(new_value_input.content, PARTICIPANTS_BREAKPOINTS),
                 names_to_pings
             )]
-            updated_meeting.add_pings(new_pings, ATTRIBUTE_PARTICIPANTS)
+            updated_meeting.add_pings(updated_pings, ATTRIBUTE_PARTICIPANTS)
         
         # If removing participants:
         elif target_property == PARTICIPANTS_REMOVE:
             print('Removing participants.')
-            new_pings = [names_to_pings[name] for name in parse_input(
+            updated_pings = [names_to_pings[name] for name in parse_input(
                 new_value_input.content, PARTICIPANTS_BREAKPOINTS
             )]
-            updated_meeting.remove_pings(new_pings, ATTRIBUTE_PARTICIPANTS)
+            updated_meeting.remove_pings(updated_pings, ATTRIBUTE_PARTICIPANTS)
         
         # If adding pings by dm:
         elif target_property == DM_ADD:
             print('Adding pings by dm.')
-            new_pings = [names_to_pings[name] for name in verify_names(
+            updated_pings = [names_to_pings[name] for name in verify_names(
                 parse_input(new_value_input.content, PARTICIPANTS_BREAKPOINTS),
                 names_to_pings
             )]
-            updated_meeting.add_pings(new_pings, ATTRIBUTE_DM)
+            updated_meeting.add_pings(updated_pings, ATTRIBUTE_DM)
         
         # If removing pings by dm:
         elif target_property == DM_REMOVE:
             print('Removing pings by dm.')
-            new_pings = [names_to_pings[name] for name in parse_input(
+            updated_pings = [names_to_pings[name] for name in parse_input(
                 new_value_input.content, PARTICIPANTS_BREAKPOINTS
             )]
-            updated_meeting.remove_pings(new_pings, ATTRIBUTE_DM)
+            updated_meeting.remove_pings(updated_pings, ATTRIBUTE_DM)
         
         # Otherwise, unkown target property.
         else:
@@ -283,6 +283,7 @@ class EditPropertySelect(Select):
 
         # STEP 4: Confirmation.
         print('New value set on updated meeting, sending confirmation view.')
+        print(f'Updated names: {updated_pings}')
 
         pings_to_names = get_pings_to_names(interaction.guild)
 
@@ -297,7 +298,7 @@ class EditPropertySelect(Select):
                 target_meeting = target_meeting,
                 updated_meeting = updated_meeting,
                 target_property = target_property,
-                updated_names = new_pings
+                updated_pings = updated_pings
             )
         )
 
@@ -364,6 +365,7 @@ async def on_confirm(
     **_
 ) -> None:
     print('In on confirm, removing original meeting.')
+    print(f'Updated pings: {updated_pings}')
 
     # Remove original meeting.
     remove_err = remove_meeting(meetings, target_meeting)
@@ -481,7 +483,7 @@ def build_confirmation_view(
     target_meeting: Meeting,
     updated_meeting: Meeting,
     target_property: str,
-    updated_names: list[str] = []
+    updated_pings: list[str] = []
 ) -> ConfirmationViewDefault:
     return ConfirmationViewDefault(
         on_confirm = on_confirm,
@@ -491,5 +493,5 @@ def build_confirmation_view(
         target_meeting = target_meeting,
         updated_meeting = updated_meeting,
         target_property = target_property,
-        updated_names = updated_names
+        updated_pings = updated_pings
     )

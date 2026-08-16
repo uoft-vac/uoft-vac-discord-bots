@@ -33,7 +33,7 @@ from frodo_meet_data import (
     GETENV_NOTIFY_CHANNEL_ID,
 )
 from meeting_time import MeetingTime
-import command_show, command_create, command_delete, command_edit, command_toggle_active
+import command_show, command_create, command_delete, command_edit, command_toggle_active, command_help
 from frodo_meet_background_tasks import notify_meetings, begin_meetings, dm_notifications
 
 CHECK_INTERVAL_SECS = 60 # Seconds between each check for meetings to notify/begin.
@@ -179,10 +179,10 @@ async def toggle_active(interaction: Interaction, target: str = None) -> None:
 
 
 @command(
-    name = 'help-frodo-meet',
-    description = 'Need help with my functions? I got you!'
+    name = 'help',
+    description = 'Need help? I got you!'
 )
-async def help_frodo_meet(interaction: Interaction) -> None:
+async def help(interaction: Interaction) -> None:
     if not await restrict_to_channel(interaction,
         bot.get_channel(int(getenv(GETENV_COMMANDS_CHANNEL_ID)))
     ): return
@@ -191,23 +191,9 @@ async def help_frodo_meet(interaction: Interaction) -> None:
         f'{DIVIDER_STR}\n'
         f'Help command prompted, calling command.'
     )
-    ...
-
-
-@command(
-    name = 'hi-frodo-meet',
-    description = '🧐'
-)
-async def hi_frodo_meet(interaction: Interaction) -> None:
-    if not await restrict_to_channel(interaction,
-        bot.get_channel(int(getenv(GETENV_COMMANDS_CHANNEL_ID)))
-    ): return
-
-    print(
-        f'{DIVIDER_STR}\n'
-        f'Hi command prompted, calling command.'
+    await command_help.help(
+        interaction
     )
-    ...
 
 
 # BACKGROUND TASKS

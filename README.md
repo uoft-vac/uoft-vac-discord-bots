@@ -45,52 +45,6 @@ When editing a bot or starting a new one, try to be consistent with its and othe
 ---
 ### Hosting
 
-The bots will be hosted on a **Raspberry Pi**, ideally set in the club office (this has yet to be tested).
-
-<u>SETUP IN PROGRESS.</u>
-
----
-### Tips
-
-#### 1. <mark>Communicate</mark> with the team (very important)
-
-- For **backend** changes, can discuss with <u>fellow webmasters</u>.
--  For **frontend** changes, discuss with the <u>exec team</u> (or just <u>admins at least</u>).
-- Announce when you've made significant changes relevant to users.
-
-#### 2. Employ good **version control** practices
-
-- **Branch** for distinct tasks.
-- Make **pull requests** with clear comments and seek code reviews before merging.
-- Write meaningful **commit messages**.
-
-#### 2. Write **readable code**
-
-- Meaningful names.
-- Type annotations.
-- Organise and distinguish tasks.
-
-#### 3. Make your code intentions clear
-
-- Write code comments.
-- Function and class docstrings.
-- Tests.
-
-#### 4. Write **TODO** comments for any <u>potential</u> development.
-
-- Small tasks can be written where they should be.
-- Larger tasks can be written below the file description.
-
+The bots will be hosted on a **Raspberry Pi** situated in the **club office**.
 \
-This will help not only you but also fellow & future webmasters.
-
----
-###
-And last but not least, <mark>be critical, be responsible, be respectful, be humble, be open to criticism, and do your best</mark>!
-\
-Let's make VAC **better than it was before**!
-
-Oh, and <u>have fun</u> as well ; )
-
-### Cheers!
-\- SL
+For details on how to operate the Pi, read the [Pi Manual](pi-manual.md).
