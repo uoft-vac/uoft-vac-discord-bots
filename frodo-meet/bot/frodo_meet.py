@@ -9,7 +9,8 @@ Stores and reads meeting data in meetings_data.json.
 Driver file.
 '''
 greet_on_boot = True # Toggleable
-greet_str = 'Frodomeet clocking in from **Sunny\'s machine**! 🌞'
+# greet_str = 'Frodomeet clocking in from **Sunny\'s machine**! 🌞'
+greet_str = 'Frodomeet clocking in from **Frodopi**! 🥧'
 
 from discord import Intents, Interaction, TextChannel
 from discord.ext import commands
