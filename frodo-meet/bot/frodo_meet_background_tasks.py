@@ -2,9 +2,7 @@
 '''
 from discord.ext.commands import Bot
 
-from common.util import (
-    dm_users_from_pings,
-)
+from common.output import dm_users_from_pings
 
 from frodo_meet_helper import (
     add_meeting,
@@ -18,15 +16,15 @@ from meeting import (Meeting,
 from meeting_time import MeetingTime
 
 
-def notify_meetings(
+def notify_meetings_relative(
     meetings: list[Meeting],
-    pings_to_names: dict[str: str],
     now: MeetingTime,
-    notice_time_secs: int
-) -> tuple[str, dict[str, list[Meeting]]]:
+    notice_time_secs: int,
+    target_notify_status: int = 0
+) -> tuple[list[tuple[Meeting, int]], dict[str, list[Meeting]]]:
     '''
     Check if any active meetings not marked as 'soon' is within the notice time.
-    Return a string of notify messages for all meetings that this applies to,
+    Return a list of meeting-to_dm pairs for meetings to notify,
     and mark these meetings as 'soon' if they haven't been already.
     Return None if there are no meetings to notify.
 
@@ -42,46 +40,43 @@ def notify_meetings(
 
         # If meeting is not within the notice time,
         # no subsequent meetings can be since they are sorted, so stop checking.
-        if not curr_meeting.is_soon(now, notice_time_secs): break
+        if not curr_meeting.is_within_timeframe(now, notice_time_secs): break
 
         # If meeting has been notified or is inactive, skip.
-        if curr_meeting.get_soon() or not curr_meeting.get_active():
-            # Mark meeting as soon.
-            curr_meeting.set_soon(True)
-            continue
+        if (
+            curr_meeting.get_notify() != target_notify_status or
+            not curr_meeting.get_active()
+        ): continue
 
         # Otherwise, notify it.
 
+        # Update notify status.
+        curr_meeting.inc_notify()
+
         # Add meeting to notify.
-        output_list.append(f'{(
-            curr_meeting.to_discord(
-                index = meetings_i,
-                pings_to_names = pings_to_names)
-            )}\n{' '.join(curr_meeting.get_participants())}'
-        )
+        output_list.append((curr_meeting, meetings_i))
 
         # Record pings by dms.
         for participant_dm in curr_meeting.get_dm():
             to_dm.setdefault(participant_dm, []).append(curr_meeting)
 
-        # Mark meeting as soon.
-        curr_meeting.set_soon(True)
-
     # Return output and pings to dm if there are any, else None.
     return (
-        f'The following meeting(s) will begin soon:\n{'\n'.join(output_list)}'
-        if output_list else None,
+        output_list if output_list else None,
         to_dm if to_dm else None
     )
 
 
-def begin_meetings(meetings: list[Meeting], now: MeetingTime) -> str:
+def begin_meetings(meetings: list[Meeting], now: MeetingTime) -> list[tuple[Meeting, str]]:
     '''
-    Return a string of begin messages for all active meetings that have begun.
+    Return a list of meeting-begin message pairs for all active meetings that have begun.
     For such meetings, remove regular meetings for the meetings list, and
     clone recurring meetings with the appropriate time increment.
+
+    Preconditions:
+     - meetings are sorted by time.
     '''
-    output = ''
+    output_list = []
 
     # Check meetings until they're not past.
     while meetings and meetings[0].is_past(now):
@@ -103,9 +98,11 @@ def begin_meetings(meetings: list[Meeting], now: MeetingTime) -> str:
         
         # If meeting is active, add it to begin.
         if curr_meeting.get_active():
-            output += f'{curr_meeting.get_title(True)} has started{recurring_output}! Happy meeting! 🎈\n'
+            output_list.append((Meeting,
+                f'{curr_meeting.get_title(True)} has started{recurring_output}! Happy meeting! 🎈'
+            ))
     
-    return output if output else None
+    return output_list
 
 
 async def dm_notifications(
@@ -121,7 +118,7 @@ async def dm_notifications(
 
     for name, meetings in to_dm.items():
         failed_dm_users = await dm_users_from_pings(bot, [name], pings_to_names, (
-            'Here\'s a reminder that the following meeting(s) will begin soon:\n'
+            'Here\'s a reminder that the following meeting(s) are upcoming:\n'
             f'{'\n'.join([
                 meeting.to_discord(pings_to_names = pings_to_names)
                 for meeting in meetings

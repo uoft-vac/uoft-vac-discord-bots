@@ -6,15 +6,9 @@ from discord.ui import View, Select
 from os import getenv
 from copy import deepcopy
 
-from common.util import (
-    get_response,
-    parse_input,
-    ConfirmationViewDefault,
-    get_pings_to_names,
-    dm_users_from_pings,
-    RESPONSE_TIMEOUT,
-    NULL_SELECT_VALUE,
-)
+from common.input import get_response, parse_input, ConfirmationViewDefault, RESPONSE_TIMEOUT, NULL_SELECT_VALUE
+from common.output import dm_users_from_pings
+from common.discord_id import get_pings_to_names
 
 from frodo_meet_helper import (
     get_meetings_to_discord,
@@ -235,7 +229,7 @@ class EditPropertySelect(Select):
             updated_meeting.set_time(time)
 
             # Reset meeting's soon status.
-            updated_meeting.set_soon()
+            updated_meeting.reset_notify()
         
         # If editing description:
         elif target_property == ATTRIBUTE_DESCRIPTION:

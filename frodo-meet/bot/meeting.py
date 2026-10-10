@@ -13,7 +13,7 @@ ATTRIBUTE_PARTICIPANTS = 'participants'
 ATTRIBUTE_DM = 'dm'
 ATTRIBUTE_RECURRENCE = 'recurrence'
 ATTRIBUTE_ACTIVE = 'active'
-ATTRIBUTE_SOON = 'soon'
+ATTRIBUTE_NOTIFY = 'notify'
 
 # Recurrence: will be cloned the same time next occurrence upon beginning.
 RECURRENCE_DAILY = 'daily'
@@ -53,7 +53,7 @@ class Meeting:
     _dm: list[str]
     _recurrence: str
     _active: bool
-    _soon: bool
+    _notify: int
 
     def __init__(self,
         title: str,
@@ -63,7 +63,7 @@ class Meeting:
         dm: list[str] = [],
         recurrence: str = '',
         active: bool = True,
-        soon: bool = False
+        notify: int = 0
     ) -> None:
         self._title = title
         self._time = time
@@ -72,7 +72,7 @@ class Meeting:
         self._dm = dm
         self._recurrence = recurrence
         self._active = active
-        self._soon = soon
+        self._notify = notify
     
 
     # INITS
@@ -87,7 +87,7 @@ class Meeting:
             dm = entry_data.get(ATTRIBUTE_DM, []),
             recurrence = entry_data.get(ATTRIBUTE_RECURRENCE, ''),
             active = entry_data.get(ATTRIBUTE_ACTIVE, True),
-            soon = entry_data.get(ATTRIBUTE_SOON, False)
+            notify = entry_data.get(ATTRIBUTE_NOTIFY, False)
         )
     
     @classmethod
@@ -100,64 +100,14 @@ class Meeting:
             dm = original.get_dm(),
             recurrence = original.get_recurrence(),
             active = original.get_active(),
-            soon = False # Always set clone's soon to false.
+            notify = 0 # Always set clone's notify status to 0.
         )
     
 
     # INSTANCE METHODS
 
     def to_discord(self, index: int = None, pings_to_names: dict[str: str] = None) -> str:
-        '''
-        Return a string of the meeting's data to be sent in Discord.
-        
-        Sample Usage:
-        >>> from frodo_meet_sample_data import SAMPLE_MEETINGS, SAMPLE_IDS_TO_NAMES
-
-        >>> meeting1 = SAMPLE_MEETINGS[0]
-        >>> meeting1.to_discord()
-        '## past, has participants\\n<t:0:F> (<t:0:R>)'
-
-        # Index:
-        >>> '## 1.' in meeting1.to_discord(0)
-        True
-
-        # Full adds description and participants.
-        >>> result_full = meeting1.to_discord(0, True)
-        >>> 'Will begin.' in result_full
-        True
-        >>> '__Participants__: <@&12345>, <@67890>' in result_full
-        True
-
-        # Ids to names replaces pings with names.
-        >>> result_ids = meeting1.to_discord(0, True, SAMPLE_IDS_TO_NAMES)
-        >>> 'Execs, Sunny' in result_ids
-        True
-        >>> '<@&12345>' in result_ids or '<@67890>' in result_ids
-        False
-
-        # Extra info (all cases):
-        >>> '(daily)' in SAMPLE_MEETINGS[1].to_discord()
-        True
-        >>> '(weekly, inactive)' SAMPLE_MEETINGS[2].to_discord()
-        True
-        >>> '(soon)' in SAMPLE_MEETINGS[4].to_discord()
-        True
-        >>> '(yearly, zoon)' in SAMPLE_MEETINGS[5].to_discord()
-        True
-        >>> '(inactive)' in SAMPLE_MEETINGS[6].to_discord()
-        True
-        >>> '(inactive, soon)' in SAMPLE_MEETINGS[7].to_discord()
-        True
-        >>> '(daily, inactive, soon)' in SAMPLE_MEETINGS[8].to_discord()
-        True
-
-        # No participants:
-        >>> meeting_no_participants = SAMPLE_MEETINGS[10]
-        >>> meeting_no_participants.to_discord(full = True) == \
-                meeting_no_participants.to_discord(full = True, ids_to_names = SAMPLE_IDS_TO_NAMES) == \
-                NO_PARTICIPANTS_MESSAGE
-        True
-        '''
+        '''Return a string of the meeting's data to be sent in Discord.'''
         time = self.get_time()
 
         output = '## '
@@ -173,8 +123,7 @@ class Meeting:
         recurrence = self.get_recurrence()
         extra_info = ', '.join(
             ([recurrence] if recurrence else []) +
-            (['inactive'] if not self.get_active() else []) +
-            (['soon'] if self.get_soon() else [])
+            (['inactive'] if not self.get_active() else [])
         )
         if extra_info:
             output += f' ({extra_info})'
@@ -213,50 +162,6 @@ class Meeting:
         Given the meeting's index and filters,
         returns if the meeting should be displayed.
         Specs are consistent with the show command's docstring.
-        
-        Sample Usage:
-        >>> from frodo_meet_sample_data import SAMPLE_MEETINGS
-
-        >>> meeting_all_filters = SAMPLE_MEETINGS[5]
-        >>> meeting_all_filters.to_display(0, ())
-        True
-        >>> meeting_all_filters.to_display(0, ('-all',))
-        False
-
-        # Intermediate filters have priority over all.
-        >>> meeting_all_filters.to_display(0, ('-all', 'recurring'))
-        True
-        >>> meeting_all_filters.to_display(0, ('-all', 'yearly'))
-        True
-        >>> meeting_all_filters.to_display(0, ('-all', 'soon'))
-        True
-        >>> meeting_all_filters.to_display(0, ('all', '-recurring'))
-        False
-        >>> meeting_all_filters.to_display(0, ('all', '-yearly'))
-        False
-        >>> meeting_all_filters.to_display(0, ('all', '-soon'))
-        False
-        >>> meeting_all_filters.to_display(0, ('all', '-active'))
-        False
-
-        # Index has priority over intermediate filters and all.
-        >>> meeting_all_filters.to_display(0, ('-all', '-recurring', '1'))
-        True
-        >>> meeting_all_filters.to_display(0, ('all', 'recurring', '-1'))
-        False
-
-        # Filters irrelevant to the meeting have no effect.
-        >>> meeting_all_filters.to_display(0, ('-all', 'daily'))
-        False
-        >>> meeting_all_filters.to_display(0, ('-all', '-recurring', '2'))
-        False
-
-        # Inactive meetings are not displayed by default.
-        >>> meeting_inactive = SAMPLE_MEETINGS[2]
-        >>> meeting_inactive.to_display(0, ())
-        False
-        >>> meeting_inactive.to_display(0, ('all',))
-        True
         '''
         # Refer to normal filters (nonnegative filters) as +filters.
 
@@ -275,14 +180,10 @@ class Meeting:
 
         # If relevant to any intermediate filters, display.
         # Don't check active since it's default.
-        if (
-            ATTRIBUTE_SOON in filters and self.get_soon() or 
-            recurrence and (recurrence in filters or 'recurring' in filters)
-        ): return True
+        if recurrence and (recurrence in filters or 'recurring' in filters): return True
 
         # Otherwise, if relevant to any -intermediate filters, don't display.
         if (
-            f'-{ATTRIBUTE_SOON}' in filters and self.get_soon() or 
             recurrence and (f'-{recurrence}' in filters or '-recurring' in filters) or 
             f'-{ATTRIBUTE_ACTIVE}' in filters and self.get_active()
         ): return False
@@ -297,7 +198,7 @@ class Meeting:
         return self.get_active()
     
 
-    def is_soon(self, now: MeetingTime, notify_time_secs: int) -> bool:
+    def is_within_timeframe(self, now: MeetingTime, notify_time_secs: int) -> bool:
         return self.get_time().is_within_timeframe(now, notify_time_secs)
     
 
@@ -306,6 +207,10 @@ class Meeting:
     
 
     # OPERATIONS
+
+    def __eq__(self, other: Meeting) -> bool:
+        # Meetings are equal if their titles are equal.
+        return self.get_title() == other.get_title()
 
     def __lt__(self, other: Meeting) -> bool:
         return (
@@ -322,7 +227,7 @@ class Meeting:
     def get_dm(self) -> list[str]: return self._dm
     def get_recurrence(self) -> str: return self._recurrence
     def get_active(self) -> bool: return self._active
-    def get_soon(self) -> bool: return self._soon
+    def get_notify(self) -> int: return self._notify
 
 
     # SETTERS
@@ -333,7 +238,8 @@ class Meeting:
     def set_dm(self, dm: list[str]) -> None: self._dm = dm
     def set_recurrence(self, recurrence: str) -> None: self._recurrence = recurrence
     def set_active(self, active: bool = True) -> None: self._active = active
-    def set_soon(self, soon: bool = False) -> None: self._soon = soon
+    def reset_notify(self) -> None: self._notify = 0
+    def inc_notify(self) -> None: self._notify += 1
 
     def add_pings(self, pings: list[str], target: Literal['participants', 'dm']) -> None:
         '''

@@ -4,11 +4,9 @@ from discord import Interaction
 
 from os import getenv
 
-from common.util import (
-    ConfirmationViewDefault,
-    get_pings_to_names,
-    dm_users_from_pings,
-)
+from common.input import ConfirmationViewDefault
+from common.output import dm_users_from_pings
+from common.discord_id import get_pings_to_names
 
 from frodo_meet_helper import (
     get_meetings_to_discord,

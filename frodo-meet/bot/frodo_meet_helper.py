@@ -4,9 +4,7 @@ from discord import Interaction, Guild, User
 
 from os import getenv
 
-from common.util import (
-    get_pings_to_names,
-)
+from common.discord_id import get_pings_to_names
 
 from frodo_meet_data import GETENV_EXEC_ROLE_ID
 from meeting import Meeting

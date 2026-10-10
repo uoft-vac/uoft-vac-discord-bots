@@ -2,7 +2,7 @@
 '''
 from pathlib import Path
 
-from common.util import read_json_file, write_json_file
+from common.file import read_json_file, write_json_file
 
 from meeting import (Meeting,
     ATTRIBUTE_TITLE,
@@ -12,7 +12,7 @@ from meeting import (Meeting,
     ATTRIBUTE_DM,
     ATTRIBUTE_RECURRENCE,
     ATTRIBUTE_ACTIVE,
-    ATTRIBUTE_SOON,
+    ATTRIBUTE_NOTIFY,
 )
 
 GETENV_SERVER_ID = 'SERVER_ID'
@@ -44,7 +44,7 @@ def save_meetings() -> None:
         ATTRIBUTE_DM: meeting.get_dm(),
         ATTRIBUTE_RECURRENCE: meeting.get_recurrence(),
         ATTRIBUTE_ACTIVE: meeting.get_active(),
-        ATTRIBUTE_SOON: meeting.get_soon()
+        ATTRIBUTE_NOTIFY: meeting.get_notify()
     } for meeting in _meetings]})
 
 

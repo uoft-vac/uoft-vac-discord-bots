@@ -9,6 +9,7 @@ Stores and reads meeting data in meetings_data.json.
 Driver file.
 '''
 greet_on_boot = True # Toggleable
+greet_str = 'Frodomeet clocking in from **Sunny\'s machine**! 🌞'
 
 from discord import Intents, Interaction, TextChannel
 from discord.ext import commands
@@ -16,14 +17,10 @@ from discord.ext import commands
 from asyncio import sleep
 from os import getcwd, getenv
 
-from common.util import (
-    load_local_dotenv,
-    chop_output,
-    restrict_to_channel,
-    get_pings_to_names,
-    GETENV_BOT_TOKEN,
-    DIVIDER_STR,
-)
+from common.env import load_local_dotenv, GETENV_BOT_TOKEN
+from common.output import chop_output, restrict_to_channel
+from common.discord_id import get_pings_to_names
+from common.misc import DIVIDER_STR
 
 from frodo_meet_data import (
     load_meetings,
@@ -34,10 +31,11 @@ from frodo_meet_data import (
 )
 from meeting_time import MeetingTime
 import command_show, command_create, command_delete, command_edit, command_toggle_active, command_help
-from frodo_meet_background_tasks import notify_meetings, begin_meetings, dm_notifications
+from frodo_meet_background_tasks import notify_meetings_relative, begin_meetings, dm_notifications
 
 CHECK_INTERVAL_SECS = 60 # Seconds between each check for meetings to notify/begin.
-NOTICE_TIME_SECS = 5 * 60 # Notify meetings that will begin in less than this number of minutes.
+NOTICE_TIME_INIT_SECS = 3 * 60 * 60 # 3 hours
+NOTICE_TIME_SOON_SECS = 5 * 60 # 5 mins
 
 
 # SETUP
@@ -64,7 +62,7 @@ async def on_ready():
     if greet_on_boot:
         await bot.get_channel(
             int(getenv(GETENV_COMMANDS_CHANNEL_ID))
-        ).send('Frodomeet clocking in! 🫡')
+        ).send(greet_str)
 
     if background_task is not None:
         print('Background task already exists. 🧐')
@@ -72,8 +70,7 @@ async def on_ready():
 
     print('Beginning background task.')
     background_task = bot.loop.create_task(auto_notify_n_begin(
-        bot.get_channel(int(getenv(GETENV_NOTIFY_CHANNEL_ID))),
-        NOTICE_TIME_SECS
+        bot.get_channel(int(getenv(GETENV_NOTIFY_CHANNEL_ID)))
     ))
 
 
@@ -198,7 +195,7 @@ async def help(interaction: Interaction) -> None:
 
 # BACKGROUND TASKS
 
-async def auto_notify_n_begin(notify_channel: TextChannel, notice_time_secs: int) -> None:
+async def auto_notify_n_begin(notify_channel: TextChannel) -> None:
     '''
     Every specified interval:
     1. Check if there are any meetings that are about to start, given a timeframe.
@@ -216,30 +213,92 @@ async def auto_notify_n_begin(notify_channel: TextChannel, notice_time_secs: int
         now = MeetingTime.get_now()
         pings_to_names = get_pings_to_names(notify_channel.guild)
 
-        # Check for any meetings to notify and get the output.
-        notify_output, to_dm = notify_meetings(
+        # Check for any meetings to notify initially and get the output.
+        notify_output_init, to_dm = notify_meetings_relative(
             meetings = meetings,
-            pings_to_names = pings_to_names,
             now = now,
-            notice_time_secs = notice_time_secs
+            notice_time_secs = NOTICE_TIME_INIT_SECS
         )
-        print('Got notify result.')
+        print('Got notify init result.')
+
+        # Check for any meetings to notify soon and get the output.
+        notify_output_soon, _ = notify_meetings_relative(
+            meetings = meetings,
+            now = now,
+            notice_time_secs = NOTICE_TIME_SOON_SECS,
+            target_notify_status = 1
+        )
+        print('Got notify soon result.')
 
         # Check for any meetings to begin and get the output.
         begin_output = begin_meetings(meetings = meetings, now = now)
         print('Got begin results.')
 
         # If meetings are modified, save data.
-        if notify_output or begin_output: save_meetings()
+        if notify_output_init or notify_output_soon or begin_output:
+            save_meetings()
+            print('Meetings data saved.')
 
-        # If there are meetings to notify, print it in the auto channel.
-        if notify_output:
-            for suboutput in chop_output(notify_output):
+        # If there are meetings that have begun, print it in the auto channel.
+        if begin_output:
+            for suboutput in chop_output('\n'.join([meeting_data[1] for meeting_data in begin_output])):
                 await notify_channel.send(suboutput)
-            print('Meetings have been notified!')
-        else: print('No meetings to notify.')
+            print('Meetings have begun!')
+        else: print('No meetings to begin.')
+
+        # Clear entries in output init and soon that have begun to prevent redundant outputs.
+        notify_output_init = [
+            (meeting_no, to_dm_) for meeting_no, to_dm_ in notify_output_init
+            if meeting_no not in [meeting_bo for meeting_bo, _ in begin_output]
+        ]
+        notify_output_soon = [
+            (meeting_no, to_dm_) for meeting_no, to_dm_ in notify_output_soon
+            if meeting_no not in [meeting_bo for meeting_bo, _ in begin_output]
+        ]
+
+        # If there are meetings to notify soon, print it in the auto channel.
+        if notify_output_soon:
+            print('Sending soon notify…')
+
+            for suboutput in chop_output(
+                'The following meeting(s) will begin soon:\n'
+                f'{'\n'.join([
+                    f'{(meeting_data[0].get_title(True))} {' '.join(meeting_data[0].get_participants())}'
+                    for meeting_data in notify_output_soon
+                ])}'
+            ): await notify_channel.send(suboutput)
+
+            print('Soon notified!')
+        else: print('No soon to notify.')
+
+        # Clear entries in output init that have been notified to prevent redundant outputs.
+        notify_output_init = [
+            (meeting_noi, to_dm_) for meeting_noi, to_dm_ in notify_output_init
+            if meeting_noi not in [meeting_nos for meeting_nos, _ in notify_output_soon]
+        ]
+
+        # If there are meetings to notify init, print it in the auto channel.
+        if notify_output_init:
+            print('Sending init notify…')
+
+            for suboutput in chop_output(
+                'Reminder that the following meeting(s) are upcoming:\n'
+                f'{'\n'.join([
+                    f'{(
+                        meeting_data[0].to_discord(
+                            index = meeting_data[1],
+                            pings_to_names = pings_to_names
+                        )
+                    )}\n{' '.join(meeting_data[0].get_participants())}'
+                    for meeting_data in notify_output_init
+                ])}'
+            ): await notify_channel.send(suboutput)
+
+            print('Init notified!')
+        else: print('No init to notify.')
 
         # If there are pings to dm, dm them.
+        # Only do so for initial notification.
         if to_dm:
             failed_dms_output = await dm_notifications(
                 bot = bot,
@@ -249,13 +308,6 @@ async def auto_notify_n_begin(notify_channel: TextChannel, notice_time_secs: int
             print('DMs have been sent!')
 
             if failed_dms_output: await notify_channel.send(failed_dms_output)
-
-        # If there are meetings that have begun, print it in the auto channel.
-        if begin_output:
-            for suboutput in chop_output(begin_output):
-                await notify_channel.send(suboutput)
-            print('Meetings have begun!')
-        else: print('No meetings to begin.')
 
         print(DIVIDER_STR)
 
