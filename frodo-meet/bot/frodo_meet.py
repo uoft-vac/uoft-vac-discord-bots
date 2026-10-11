@@ -208,6 +208,7 @@ async def auto_notify_n_begin(notify_channel: TextChannel) -> None:
     # Loop as long as bot is online.
     while not bot.is_closed():
         print(DIVIDER_STR)
+        print('Reiterating auto notify n begin.')
         # await notify_channel.send(f'Test: the current time is {MeetingTime.get_now().to_discord()}.')
 
         meetings = get_meetings()
@@ -242,20 +243,23 @@ async def auto_notify_n_begin(notify_channel: TextChannel) -> None:
 
         # If there are meetings that have begun, print it in the auto channel.
         if begin_output:
+            print('Sending begins…')
+
             for suboutput in chop_output('\n'.join([meeting_data[1] for meeting_data in begin_output])):
                 await notify_channel.send(suboutput)
             print('Meetings have begun!')
-        else: print('No meetings to begin.')
 
-        # Clear entries in output init and soon that have begun to prevent redundant outputs.
-        notify_output_init = [
-            (meeting_no, to_dm_) for meeting_no, to_dm_ in notify_output_init
-            if meeting_no not in [meeting_bo for meeting_bo, _ in begin_output]
-        ]
-        notify_output_soon = [
-            (meeting_no, to_dm_) for meeting_no, to_dm_ in notify_output_soon
-            if meeting_no not in [meeting_bo for meeting_bo, _ in begin_output]
-        ]
+            # Clear entries in output init and soon that have begun to prevent redundant outputs.
+            notify_output_init = [
+                (meeting_no, to_dm_) for meeting_no, to_dm_ in notify_output_init
+                if meeting_no not in [meeting_bo for meeting_bo, _ in begin_output]
+            ]
+            notify_output_soon = [
+                (meeting_no, to_dm_) for meeting_no, to_dm_ in notify_output_soon
+                if meeting_no not in [meeting_bo for meeting_bo, _ in begin_output]
+            ]
+        
+        else: print('No meetings to begin.')
 
         # If there are meetings to notify soon, print it in the auto channel.
         if notify_output_soon:
@@ -268,15 +272,15 @@ async def auto_notify_n_begin(notify_channel: TextChannel) -> None:
                     for meeting_data in notify_output_soon
                 ])}'
             ): await notify_channel.send(suboutput)
-
             print('Soon notified!')
-        else: print('No soon to notify.')
 
-        # Clear entries in output init that have been notified to prevent redundant outputs.
-        notify_output_init = [
-            (meeting_noi, to_dm_) for meeting_noi, to_dm_ in notify_output_init
-            if meeting_noi not in [meeting_nos for meeting_nos, _ in notify_output_soon]
-        ]
+            # Clear entries in output init that have been notified to prevent redundant outputs.
+            notify_output_init = [
+                (meeting_noi, to_dm_) for meeting_noi, to_dm_ in notify_output_init
+                if meeting_noi not in [meeting_nos for meeting_nos, _ in notify_output_soon]
+            ]
+        
+        else: print('No soon to notify.')
 
         # If there are meetings to notify init, print it in the auto channel.
         if notify_output_init:
@@ -310,9 +314,9 @@ async def auto_notify_n_begin(notify_channel: TextChannel) -> None:
 
             if failed_dms_output: await notify_channel.send(failed_dms_output)
 
-        print(DIVIDER_STR)
-
         # Sleep for the specified interval.
+        print('Sleep timer…')
+        print(DIVIDER_STR)
         await sleep(CHECK_INTERVAL_SECS)
 
 
